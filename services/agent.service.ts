@@ -1,9 +1,8 @@
 /**
  * Nexa — Agent API client
  *
- * The chat UI talks to the server-side `/api/agent` endpoint and renders the
- * assistant text returned by the provider response at
- * `completion.choices[0].message.content`.
+ * The chat UI talks to the server-side `/api/agent` endpoint and renders text
+ * chunks as they stream back from OpenRouter.
  */
 
 import { shortId } from "@/lib/utils";
@@ -23,15 +22,6 @@ interface RunOptions {
   history?: ChatMessage[];
 }
 
-interface ProviderCompletion {
-  id?: string;
-  choices?: Array<{
-    message?: {
-      content?: string | null;
-    } | null;
-  }>;
-}
-
 interface ApiError {
   error?: string;
 }
@@ -39,10 +29,10 @@ interface ApiError {
 /**
  * Run the assistant through the real API route.
  *
- * The route returns the raw OpenAI/OpenRouter chat completion object. The UI
- * only needs the assistant's final text, so this adapter extracts
- * `choices[0].message.content` and emits it as the existing assistant message
- * event without any mock orchestration summary formatting.
+ * The route streams plain text chunks. This adapter converts each decoded chunk
+ * into the existing `assistant_delta` event so the store can progressively
+ * append text to the in-flight assistant message without changing the app
+ * architecture.
  */
 export async function* runAgent(
   request: string,
@@ -56,19 +46,40 @@ export async function* runAgent(
       signal: options.signal,
     });
 
-    const payload = (await response.json()) as ProviderCompletion & ApiError;
-
     if (!response.ok) {
-      throw new Error(payload.error ?? "Agent request failed.");
+      throw new Error(await readErrorMessage(response));
     }
 
-    const content = payload.choices?.[0]?.message?.content;
-    if (!content) {
+    if (!response.body) {
+      throw new Error("Agent response did not include a readable stream.");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let hasContent = false;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const delta = decoder.decode(value, { stream: true });
+      if (delta) {
+        hasContent = true;
+        yield { type: "assistant_delta", delta };
+      }
+    }
+
+    const remaining = decoder.decode();
+    if (remaining) {
+      hasContent = true;
+      yield { type: "assistant_delta", delta: remaining };
+    }
+
+    if (!hasContent) {
       throw new Error("Agent response did not include assistant message content.");
     }
 
-    yield { type: "assistant_delta", delta: content };
-    yield { type: "done", messageId: payload.id ?? shortId("msg") };
+    yield { type: "done", messageId: shortId("msg") };
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") return;
 
@@ -76,6 +87,15 @@ export async function* runAgent(
       type: "error",
       error: err instanceof Error ? err.message : "Unknown error",
     };
+  }
+}
+
+async function readErrorMessage(response: Response) {
+  try {
+    const payload = (await response.json()) as ApiError;
+    return payload.error ?? "Agent request failed.";
+  } catch {
+    return "Agent request failed.";
   }
 }
 

@@ -16,9 +16,7 @@ export function MessageBubble({ message, userName }: MessageBubbleProps) {
   const renderedContent = isUser
     ? message.content
     : sanitizeAssistantContent(message.content);
-  const shouldRenderContent = Boolean(
-    renderedContent || (message.streaming && !isUser && message.content),
-  );
+  const shouldRenderContent = Boolean(renderedContent || (message.streaming && !isUser));
 
   return (
     <motion.div
@@ -68,8 +66,12 @@ export function MessageBubble({ message, userName }: MessageBubbleProps) {
                 : "text-[15px] leading-relaxed text-foreground/90",
             )}
           >
-            <MarkdownLite content={renderedContent} />
-            {message.streaming && !isUser && (
+            {renderedContent ? (
+              <MarkdownLite content={renderedContent} />
+            ) : (
+              <TypingIndicator />
+            )}
+            {message.streaming && !isUser && renderedContent && (
               <span className="caret" aria-hidden />
             )}
           </div>
@@ -123,5 +125,24 @@ function renderInline(text: string) {
     ) : (
       <span key={i}>{p}</span>
     ),
+  );
+}
+
+function TypingIndicator() {
+  return (
+    <div
+      className="flex items-center gap-1.5 py-1 text-muted-foreground"
+      aria-label="Nexa is typing"
+    >
+      <span className="sr-only">Nexa is typing…</span>
+      {[0, 1, 2].map((index) => (
+        <span
+          key={index}
+          className="size-1.5 rounded-full bg-primary/70 animate-pulse"
+          style={{ animationDelay: `${index * 150}ms` }}
+          aria-hidden
+        />
+      ))}
+    </div>
   );
 }
