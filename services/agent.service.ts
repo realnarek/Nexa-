@@ -26,19 +26,13 @@ interface ApiError {
   error?: string;
 }
 
-interface ChatCompletionStreamEvent {
-  choices?: Array<{
-    delta?: {
-      content?: string | Array<{ text?: string }>;
-    };
-    message?: {
-      content?: string;
-    };
-  }>;
-  error?: {
-    message?: string;
-  };
-}
+type AgentStreamEvent =
+  | { type: "assistant_delta"; delta: string }
+  | { type: "tool_call.queued"; call: ToolCall }
+  | { type: "tool_call.log"; callId: string; log: ToolLogEntry }
+  | { type: "tool_call.result"; call: ToolCall }
+  | { type: "done" }
+  | { type: "error"; error: string };
 
 /**
  * Run the assistant through the real API route.
@@ -72,9 +66,22 @@ export async function* runAgent(
 
     let hasContent = false;
     for await (const event of readSseEvents(response.body)) {
-      for (const delta of parseAssistantDeltas(event)) {
+      if (event === "[DONE]") break;
+
+      const parsed = parseAgentEvent(event);
+      if (!parsed) continue;
+
+      if (parsed.type === "assistant_delta") {
         hasContent = true;
-        yield { type: "assistant_delta", delta };
+        yield parsed;
+      } else if (parsed.type === "tool_call.queued") {
+        yield parsed;
+      } else if (parsed.type === "tool_call.log") {
+        yield parsed;
+      } else if (parsed.type === "tool_call.result") {
+        yield parsed;
+      } else if (parsed.type === "error") {
+        throw new Error(parsed.error);
       }
     }
 
@@ -168,27 +175,14 @@ function readSseData(rawEvent: string) {
     .join("\n");
 }
 
-function parseAssistantDeltas(data: string) {
-  if (!data || data === "[DONE]") return [];
+function parseAgentEvent(data: string): AgentStreamEvent | null {
+  if (!data) return null;
 
-  let event: ChatCompletionStreamEvent;
   try {
-    event = JSON.parse(data) as ChatCompletionStreamEvent;
+    return JSON.parse(data) as AgentStreamEvent;
   } catch {
-    return [];
+    return null;
   }
-
-  if (event.error?.message) {
-    throw new Error(event.error.message);
-  }
-
-  return (event.choices ?? [])
-    .map((choice) => choice.delta?.content ?? choice.message?.content ?? "")
-    .flatMap((content) => {
-      if (typeof content === "string") return content;
-      return content.map((part) => part.text ?? "").join("");
-    })
-    .filter((delta) => delta.length > 0);
 }
 
 function buildMessages(request: string, history?: ChatMessage[]) {

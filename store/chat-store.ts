@@ -176,13 +176,8 @@ export const useChatStore = create<ChatState>()(
             useWorkflowStore.getState().attachPlan(workflowId, ev.plan);
           } else if (ev.type === "tool_call.queued") {
             set((s) => ({
-              currentCalls: [...s.currentCalls, ev.call],
-            }));
-          } else if (ev.type === "tool_call.result") {
-            set((s) => ({
-              currentCalls: s.currentCalls.map((c) =>
-                c.id === ev.call.id ? ev.call : c,
-              ),
+              status: "executing",
+              currentCalls: upsertToolCall(s.currentCalls, ev.call),
               conversations: s.conversations.map((c) =>
                 c.id !== activeId
                   ? c
@@ -192,7 +187,49 @@ export const useChatStore = create<ChatState>()(
                         m.id === assistantMsg.id
                           ? {
                               ...m,
-                              toolCalls: [...(m.toolCalls ?? []), ev.call],
+                              toolCalls: upsertToolCall(m.toolCalls ?? [], ev.call),
+                            }
+                          : m,
+                      ),
+                    },
+              ),
+            }));
+          } else if (ev.type === "tool_call.log") {
+            set((s) => ({
+              currentCalls: appendToolLog(s.currentCalls, ev.callId, ev.log),
+              conversations: s.conversations.map((c) =>
+                c.id !== activeId
+                  ? c
+                  : {
+                      ...c,
+                      messages: c.messages.map((m) =>
+                        m.id === assistantMsg.id
+                          ? {
+                              ...m,
+                              toolCalls: appendToolLog(
+                                m.toolCalls ?? [],
+                                ev.callId,
+                                ev.log,
+                              ),
+                            }
+                          : m,
+                      ),
+                    },
+              ),
+            }));
+          } else if (ev.type === "tool_call.result") {
+            set((s) => ({
+              currentCalls: upsertToolCall(s.currentCalls, ev.call),
+              conversations: s.conversations.map((c) =>
+                c.id !== activeId
+                  ? c
+                  : {
+                      ...c,
+                      messages: c.messages.map((m) =>
+                        m.id === assistantMsg.id
+                          ? {
+                              ...m,
+                              toolCalls: upsertToolCall(m.toolCalls ?? [], ev.call),
                             }
                           : m,
                       ),
@@ -257,4 +294,21 @@ export const useChatStore = create<ChatState>()(
 
 export function useActiveConversation(): Conversation | undefined {
   return useChatStore(getActive);
+}
+
+
+function upsertToolCall(calls: ToolCall[], call: ToolCall) {
+  const exists = calls.some((existing) => existing.id === call.id);
+  if (!exists) return [...calls, call];
+  return calls.map((existing) => (existing.id === call.id ? call : existing));
+}
+
+function appendToolLog(
+  calls: ToolCall[],
+  callId: string,
+  log: import("@/types").ToolLogEntry,
+) {
+  return calls.map((call) =>
+    call.id === callId ? { ...call, logs: [...call.logs, log] } : call,
+  );
 }
