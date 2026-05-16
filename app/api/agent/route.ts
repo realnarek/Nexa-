@@ -1,15 +1,14 @@
 /**
- * Optional server-side agent endpoint.
+ * Server-side agent endpoint.
  *
- * The demo client uses the in-process mock orchestrator in
- * `services/agent.service.ts`. This route exists so the architecture is
- * ready to swap in a real LLM tool-calling loop without UI changes.
- *
- * Wire it up by setting OPENAI_API_KEY in .env.local and pointing the
- * chat store at `/api/agent` instead of the local orchestrator.
+ * The chat frontend calls this route and expects a JSON response every time.
+ * Successful provider calls return the raw OpenAI/OpenRouter completion object;
+ * failures return a JSON error payload so the client never crashes parsing an
+ * empty response body.
  */
 
 import { NextResponse } from "next/server";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { openai, openaiEnabled, NEXA_MODEL } from "@/lib/openai";
 import { toolRegistry } from "@/services/tool-registry";
 
@@ -23,17 +22,40 @@ export async function POST(req: Request) {
     );
   }
 
-  const { messages } = await req.json();
+  let messages: ChatCompletionMessageParam[];
+  try {
+    const body = (await req.json()) as { messages?: unknown };
+    if (!Array.isArray(body.messages)) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 },
+      );
+    }
 
-  const completion = await openai.chat.completions.create({
-    model: NEXA_MODEL,
-    messages,
-    stream: false,
-    tools: toolRegistry.toFunctionSchemas().map((s) => ({
-      type: "function",
-      function: s,
-    })),
-  });
+    messages = body.messages as ChatCompletionMessageParam[];
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid request body" },
+      { status: 400 },
+    );
+  }
 
-  return NextResponse.json(completion);
+  try {
+    const completion = await openai.chat.completions.create({
+      model: NEXA_MODEL,
+      messages,
+      stream: false,
+      tools: toolRegistry.toFunctionSchemas().map((s) => ({
+        type: "function",
+        function: s,
+      })),
+    });
+
+    return NextResponse.json(completion);
+  } catch {
+    return NextResponse.json(
+      { error: "Provider request failed" },
+      { status: 502 },
+    );
+  }
 }
