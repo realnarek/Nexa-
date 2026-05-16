@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode (still available for toggle) */
+    --background: 40 20% 98%;
+    --foreground: 0 0% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
+    --primary: 28 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 8%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 0% 8%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 92%;
+    --ring: 28 100% 64%;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    /* Default Nexa dark — warm near-black */
+    --background: 0 0% 4%;
+    --foreground: 40 12% 96%;
+    --card: 0 0% 7%;
+    --card-foreground: 40 12% 96%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 40 12% 96%;
+    --primary: 28 100% 64%;
+    --primary-foreground: 0 0% 6%;
+    --secondary: 0 0% 11%;
+    --secondary-foreground: 40 12% 96%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 40 4% 58%;
+    --accent: 0 0% 13%;
+    --accent-foreground: 40 12% 96%;
+    --destructive: 0 65% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 14%;
+    --input: 0 0% 13%;
+    --ring: 28 100% 64%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01", "ss03";
+  }
+  body {
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: hsl(28 100% 64% / 0.25);
+    color: hsl(40 12% 98%);
+  }
+}
+
+@layer components {
+  /* Hairline borders with subtle gradient */
+  .surface {
+    @apply bg-card border border-border/80 rounded-xl;
+    background-image: linear-gradient(
+      180deg,
+      hsl(0 0% 100% / 0.015) 0%,
+      transparent 100%
+    );
+  }
+
+  .surface-elevated {
+    @apply bg-card border border-border rounded-xl;
+    background-image: linear-gradient(
+      180deg,
+      hsl(0 0% 100% / 0.025) 0%,
+      transparent 100%
+    );
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.03) inset,
+      0 0 0 1px hsl(0 0% 0% / 0.5),
+      0 24px 60px -20px hsl(0 0% 0% / 0.5);
+  }
+
+  /* Editorial display treatment */
+  .display-serif {
+    @apply font-display tracking-tight;
+    font-feature-settings: "liga" 1, "calt" 1, "dlig" 1;
+  }
+
+  /* Subtle grain overlay for premium feel */
+  .grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: var(--tw-bg-grain, url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E"));
+    opacity: 0.04;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    z-index: 0;
+  }
+
+  /* Dotted grid background */
+  .bg-grid {
+    background-image: radial-gradient(
+      hsl(40 12% 96% / 0.06) 1px,
+      transparent 1px
+    );
+    background-size: 24px 24px;
+  }
+
+  /* Caret animation for typing */
+  .caret::after {
+    content: "▍";
+    display: inline-block;
+    color: hsl(var(--primary));
+    margin-left: 2px;
+    animation: caret-blink 1s steps(2) infinite;
+  }
+
+  @keyframes caret-blink {
+    0%,
+    50% {
+      opacity: 1;
+    }
+    50.01%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* Scrollbar */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 18%);
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(0 0% 28%);
+  }
+
+  /* Status dot */
+  .status-dot {
+    @apply relative inline-flex h-2 w-2 rounded-full;
+  }
+  .status-dot::after {
+    content: "";
+    @apply absolute inset-0 rounded-full animate-ping opacity-60;
+    background: currentColor;
+  }
+}
+
+@layer utilities {
+  /* Mask for fading list edges */
+  .mask-fade-y {
+    mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      black 32px,
+      black calc(100% - 32px),
+      transparent 100%
+    );
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
