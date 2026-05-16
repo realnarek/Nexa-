@@ -1,9 +1,9 @@
 import { sleep, shortId } from "@/lib/utils";
 import type { ToolDefinition } from "@/types";
 
-interface CalendarInput {
+interface CalendarInput extends Record<string, unknown> {
   title: string;
-  startsAt: string; // ISO
+  startAt: string;
   durationMinutes?: number;
   attendees?: string[];
 }
