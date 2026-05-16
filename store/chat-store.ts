@@ -92,6 +92,8 @@ export const useChatStore = create<ChatState>()(
         const state = get();
         let activeId = state.activeId;
         if (!activeId) activeId = get().newConversation();
+        const previousMessages =
+          state.conversations.find((c) => c.id === activeId)?.messages ?? [];
 
         // Push user message
         const userMsg: ChatMessage = {
@@ -141,7 +143,10 @@ export const useChatStore = create<ChatState>()(
         let accumulated = "";
 
         try {
-          for await (const ev of runAgent(text, { signal: controller.signal })) {
+          for await (const ev of runAgent(text, {
+            signal: controller.signal,
+            history: [...previousMessages, userMsg],
+          })) {
             applyAgentEvent(ev);
           }
         } catch {
@@ -201,6 +206,23 @@ export const useChatStore = create<ChatState>()(
               const out = ev.call.output as { task?: import("@/types").Task };
               if (out?.task) useTaskStore.getState().add(out.task);
             }
+          } else if (ev.type === "error") {
+            set({ status: "error" });
+            accumulated += ev.error;
+            set((s) => ({
+              conversations: s.conversations.map((c) =>
+                c.id !== activeId
+                  ? c
+                  : {
+                      ...c,
+                      messages: c.messages.map((m) =>
+                        m.id === assistantMsg.id
+                          ? { ...m, content: ev.error }
+                          : m,
+                      ),
+                    },
+              ),
+            }));
           } else if (ev.type === "assistant_delta") {
             accumulated += ev.delta;
             set((s) => ({
