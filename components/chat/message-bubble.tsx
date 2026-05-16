@@ -13,6 +13,12 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ message, userName }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  const renderedContent = isUser
+    ? message.content
+    : sanitizeAssistantContent(message.content);
+  const shouldRenderContent = Boolean(
+    renderedContent || (message.streaming && !isUser && message.content),
+  );
 
   return (
     <motion.div
@@ -53,7 +59,7 @@ export function MessageBubble({ message, userName }: MessageBubbleProps) {
         )}
 
         {/* Text content */}
-        {message.content && (
+        {shouldRenderContent && (
           <div
             className={cn(
               "max-w-2xl",
@@ -62,7 +68,7 @@ export function MessageBubble({ message, userName }: MessageBubbleProps) {
                 : "text-[15px] leading-relaxed text-foreground/90",
             )}
           >
-            <MarkdownLite content={message.content} />
+            <MarkdownLite content={renderedContent} />
             {message.streaming && !isUser && (
               <span className="caret" aria-hidden />
             )}
@@ -71,6 +77,14 @@ export function MessageBubble({ message, userName }: MessageBubbleProps) {
       </div>
     </motion.div>
   );
+}
+
+function sanitizeAssistantContent(content: string) {
+  return content
+    .replace(/(^|\s):[a-z0-9_+-]+(?:::[a-z0-9_+-]+)*:(?=\s|$|[.,!?;])/gi, "$1")
+    .replace(/ {2,}/g, " ")
+    .replace(/ *\n */g, "\n")
+    .trim();
 }
 
 /**
