@@ -12,15 +12,9 @@
 
 import type { ToolDefinition } from "@/types";
 import { webSearchTool } from "@/features/tools/web-search.tool";
-import { notesTool } from "@/features/tools/notes.tool";
-import { emailDraftTool } from "@/features/tools/email-draft.tool";
-import { taskCreatorTool } from "@/features/tools/task-creator.tool";
 
 const tools: ToolDefinition[] = [
   webSearchTool,
-  notesTool,
-  emailDraftTool,
-  taskCreatorTool,
 ];
 
 const byId = new Map(tools.map((t) => [t.id, t]));
