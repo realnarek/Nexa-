@@ -9,9 +9,6 @@ export const config = {
   version: "0.1.0",
   /** When true, agent uses mock orchestration instead of real LLM. */
   get demoMode(): boolean {
-    if (typeof window !== "undefined") {
-      return !process.env.NEXT_PUBLIC_OPENROUTER_ENABLED;
-    }
     return !process.env.OPENROUTER_API_KEY;
   },
 } as const;

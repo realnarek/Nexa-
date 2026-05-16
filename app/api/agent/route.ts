@@ -9,13 +9,13 @@
 
 import { NextResponse } from "next/server";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { openai, openaiEnabled, NEXA_MODEL } from "@/lib/openai";
+import { openrouter, openrouterEnabled, NEXA_MODEL } from "@/lib/openai";
 import { toolRegistry } from "@/services/tool-registry";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  if (!openaiEnabled || !openai) {
+  if (!openrouterEnabled || !openrouter) {
     return NextResponse.json(
       { error: "Demo mode — set OPENROUTER_API_KEY in .env.local to enable live agent." },
       { status: 503 },
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       function: s,
     }));
 
-    const completion = await openai.chat.completions.create({
+    const completion = await openrouter.chat.completions.create({
       model: NEXA_MODEL,
       messages,
       stream: false,
