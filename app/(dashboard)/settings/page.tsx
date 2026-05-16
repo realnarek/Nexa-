@@ -156,7 +156,7 @@ export default function SettingsPage() {
               <p className="text-[11px] text-muted-foreground">
                 In production, this would be encrypted and stored server-side.
                 For the demo, set{" "}
-                <code className="font-mono bg-secondary px-1 py-0.5 rounded">OPENAI_API_KEY</code>{" "}
+                <code className="font-mono bg-secondary px-1 py-0.5 rounded">OPENROUTER_API_KEY</code>{" "}
                 in <code className="font-mono bg-secondary px-1 py-0.5 rounded">.env.local</code>.
               </p>
             </div>

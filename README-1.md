@@ -57,7 +57,7 @@ The architecture is built for graceful upgrade. Each subsystem swaps independent
 
 | Demo mode (default)                  | Production                                     |
 | ------------------------------------ | ---------------------------------------------- |
-| Mock orchestrator in `services/agent.service.ts` | Set `OPENAI_API_KEY` and route through `/api/agent` |
+| Mock orchestrator in `services/agent.service.ts` | Set `OPENROUTER_API_KEY` and route through `/api/agent` |
 | `localStorage` auth via Zustand      | Set `NEXT_PUBLIC_SUPABASE_*`, use `lib/supabase.ts`  |
 | Tool `execute()` returns fake data   | Replace per-tool `execute()` with real API calls    |
 
