@@ -17,7 +17,7 @@ export const runtime = "nodejs";
 export async function POST(req: Request) {
   if (!openaiEnabled || !openai) {
     return NextResponse.json(
-      { error: "Demo mode — set OPENAI_API_KEY in .env.local to enable live agent." },
+      { error: "Demo mode — set OPENROUTER_API_KEY in .env.local to enable live agent." },
       { status: 503 },
     );
   }
