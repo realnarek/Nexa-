@@ -74,7 +74,7 @@ export function ChatComposer() {
             placeholder={
               busy
                 ? "Agent is working… press Stop to interrupt."
-                : "Ask Nexa to do anything. ⏎ to send · ⇧⏎ for newline"
+                : "Ask Nexa anything..."
             }
             disabled={busy}
             rows={1}
