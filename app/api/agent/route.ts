@@ -1,21 +1,25 @@
 /**
  * Server-side agent endpoint.
  *
- * The chat frontend calls this route and receives a streamed text response from
- * OpenRouter, allowing the UI to render assistant tokens as soon as they arrive.
- * Failures that happen before streaming starts still return a JSON error payload
- * so the client can show a useful message.
+ * Proxies OpenRouter's native chat-completions SSE stream to the browser so the
+ * chat UI can render provider tokens as soon as they are emitted. Failures that
+ * happen before streaming starts still return a JSON error payload so the client
+ * can show a useful message.
  */
 
 import { NextResponse } from "next/server";
-import type {
-  ChatCompletionCreateParamsStreaming,
-  ChatCompletionMessageParam,
-} from "openai/resources/chat/completions";
-import { openai, openaiEnabled, NEXA_MODEL } from "@/lib/openai";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import {
+  openaiEnabled,
+  OPENROUTER_BASE_URL,
+  openRouterApiKey,
+  openRouterDefaultHeaders,
+  NEXA_MODEL,
+} from "@/lib/openai";
 import { toolRegistry } from "@/services/tool-registry";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const SYSTEM_MESSAGE: ChatCompletionMessageParam = {
   role: "system",
@@ -24,7 +28,7 @@ const SYSTEM_MESSAGE: ChatCompletionMessageParam = {
 };
 
 export async function POST(req: Request) {
-  if (!openaiEnabled || !openai) {
+  if (!openaiEnabled || !openRouterApiKey) {
     return NextResponse.json(
       { error: "Demo mode — set OPENROUTER_API_KEY in .env.local to enable live agent." },
       { status: 503 },
@@ -55,48 +59,51 @@ export async function POST(req: Request) {
       function: s,
     }));
 
-    const completionRequest: ChatCompletionCreateParamsStreaming = {
-      model: NEXA_MODEL,
-      messages: [SYSTEM_MESSAGE, ...messages],
-      stream: true,
-      provider: {
-        require_parameters: true,
+    const providerResponse = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openRouterApiKey}`,
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+        ...openRouterDefaultHeaders,
       },
-    } as ChatCompletionCreateParamsStreaming;
-
-    if (toolSchemas.length > 0) {
-      completionRequest.tools = toolSchemas;
-    }
-
-    const completionStream = await openai.chat.completions.create(completionRequest);
-    const encoder = new TextEncoder();
-
-    const responseStream = new ReadableStream<Uint8Array>({
-      async start(controller) {
-        try {
-          for await (const chunk of completionStream) {
-            const delta = chunk.choices[0]?.delta?.content;
-            if (typeof delta === "string" && delta.length > 0) {
-              controller.enqueue(encoder.encode(delta));
-            }
-          }
-          controller.close();
-        } catch (error) {
-          console.error("OpenRouter provider stream failed", serializeProviderError(error));
-          controller.error(error);
-        }
-      },
+      body: JSON.stringify({
+        model: NEXA_MODEL,
+        messages: [SYSTEM_MESSAGE, ...messages],
+        stream: true,
+        provider: {
+          require_parameters: true,
+        },
+        ...(toolSchemas.length > 0 ? { tools: toolSchemas } : {}),
+      }),
+      signal: req.signal,
     });
 
-    return new Response(responseStream, {
+    if (!providerResponse.ok || !providerResponse.body) {
+      console.error(
+        "OpenRouter provider request failed",
+        await serializeProviderResponse(providerResponse),
+      );
+
+      return NextResponse.json(
+        { error: "Provider request failed" },
+        { status: 502 },
+      );
+    }
+
+    return new Response(providerResponse.body, {
       headers: {
-        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Type": "text/event-stream; charset=utf-8",
         "Cache-Control": "no-cache, no-transform",
         Connection: "keep-alive",
         "X-Accel-Buffering": "no",
       },
     });
   } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return new Response(null, { status: 499 });
+    }
+
     console.error("OpenRouter provider request failed", serializeProviderError(error));
 
     return NextResponse.json(
@@ -106,25 +113,26 @@ export async function POST(req: Request) {
   }
 }
 
+async function serializeProviderResponse(response: Response) {
+  let body: unknown;
+  try {
+    body = await response.text();
+  } catch {
+    body = "Unable to read provider error body";
+  }
+
+  return {
+    status: response.status,
+    statusText: response.statusText,
+    body,
+  };
+}
+
 function serializeProviderError(error: unknown) {
   if (error instanceof Error) {
-    const maybeOpenAiError = error as Error & {
-      status?: number;
-      code?: string;
-      type?: string;
-      param?: string;
-      response?: { headers?: unknown };
-      error?: unknown;
-    };
-
     return {
       name: error.name,
       message: error.message,
-      status: maybeOpenAiError.status,
-      code: maybeOpenAiError.code,
-      type: maybeOpenAiError.type,
-      param: maybeOpenAiError.param,
-      providerError: maybeOpenAiError.error,
       stack: error.stack,
     };
   }
