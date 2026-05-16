@@ -16,7 +16,7 @@ export function MessageBubble({ message, userName }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const renderedContent = isUser
     ? message.content
-    : sanitizeAssistantContent(message.content);
+    : sanitizeAssistantContent(message.content, { trim: !message.streaming });
   const shouldRenderContent = Boolean(
     renderedContent || (message.streaming && !isUser),
   );
@@ -93,12 +93,16 @@ export function MessageBubble({ message, userName }: MessageBubbleProps) {
   );
 }
 
-function sanitizeAssistantContent(content: string) {
-  return content
+function sanitizeAssistantContent(
+  content: string,
+  { trim = true }: { trim?: boolean } = {},
+) {
+  const sanitized = content
     .replace(/(^|\s):[a-z0-9_+-]+(?:::[a-z0-9_+-]+)*:(?=\s|$|[.,!?;])/gi, "$1")
     .replace(/ {2,}/g, " ")
-    .replace(/ *\n */g, "\n")
-    .trim();
+    .replace(/ *\n */g, "\n");
+
+  return trim ? sanitized.trim() : sanitized;
 }
 
 /**
