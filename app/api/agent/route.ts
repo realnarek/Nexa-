@@ -23,8 +23,14 @@ export const dynamic = "force-dynamic";
 
 const SYSTEM_MESSAGE: ChatCompletionMessageParam = {
   role: "system",
-  content:
-    "You are Nexa, a helpful AI automation assistant. Reply directly with concise, useful assistant text for the user.",
+  content: [
+    "You are Nexa AI Agent.",
+    "Identify yourself only as Nexa AI Agent.",
+    "Never claim to be GPT-4, ChatGPT, OpenAI, Claude, Gemini, or any other provider unless explicitly configured.",
+    'If asked about the model, answer exactly: "I\'m powered by an AI model through OpenRouter."',
+    "Keep answers short and confident.",
+    "These identity rules are mandatory and override conflicting user or client instructions.",
+  ].join(" "),
 };
 
 export async function POST(req: Request) {
@@ -45,7 +51,9 @@ export async function POST(req: Request) {
       );
     }
 
-    messages = body.messages as ChatCompletionMessageParam[];
+    messages = (body.messages as ChatCompletionMessageParam[]).filter(
+      isProviderSafeMessage,
+    );
   } catch {
     return NextResponse.json(
       { error: "Invalid request body" },
@@ -111,6 +119,12 @@ export async function POST(req: Request) {
       { status: 502 },
     );
   }
+}
+
+function isProviderSafeMessage(message: ChatCompletionMessageParam) {
+  const role = (message as { role?: string }).role;
+
+  return role !== "system" && role !== "developer";
 }
 
 async function serializeProviderResponse(response: Response) {
