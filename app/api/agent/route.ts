@@ -125,7 +125,8 @@ export async function POST(req: Request) {
           return;
         }
 
-        console.error("Agent request failed", serializeProviderError(error));
+        const errorInfo = serializeProviderError(error);
+        console.error("[agent] Request failed:", JSON.stringify(errorInfo));
         emit({
           type: "error",
           error: error instanceof Error ? error.message : "Provider request failed",
@@ -233,8 +234,11 @@ async function streamProviderTurn({
   });
 
   if (!response.ok || !response.body) {
-    console.error("OpenRouter provider request failed", await serializeProviderResponse(response));
-    throw new Error("Provider request failed");
+    const details = await serializeProviderResponse(response);
+    console.error("[agent] OpenRouter request failed:", JSON.stringify(details));
+    throw new Error(
+      `Provider request failed (${details.status}): ${typeof details.body === "string" ? details.body.slice(0, 300) : response.statusText}`,
+    );
   }
 
   let assistantContent = "";
@@ -319,6 +323,7 @@ async function executeToolCall(
     emit({ type: "tool_call.log", callId: call.id, log });
   };
 
+  console.log(`[agent] Executing tool: ${providerCall.function.name}`, { input });
   emit({ type: "tool_call.queued", call });
 
   if (!tool) {
@@ -330,6 +335,7 @@ async function executeToolCall(
 
   try {
     const output = await tool.execute(input, { signal, log: pushLog });
+    console.log(`[agent] Tool ${providerCall.function.name} succeeded`);
     const succeeded = {
       ...call,
       status: "succeeded" as const,
@@ -341,6 +347,7 @@ async function executeToolCall(
     return { modelPayload: { ok: true, data: output } };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Tool execution failed";
+    console.error(`[agent] Tool ${providerCall.function.name} failed:`, message);
     pushLog({ level: "error", message });
     const failed = {
       ...call,
