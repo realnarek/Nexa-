@@ -1,16 +1,15 @@
 /**
  * Server-side agent endpoint.
  *
- * The chat frontend calls this route and expects a JSON response every time.
- * Successful provider calls return the raw OpenAI/OpenRouter completion object;
- * failures return a JSON error payload so the client never crashes parsing an
- * empty response body.
+ * The chat frontend calls this route and receives a streamed text response from
+ * OpenRouter, allowing the UI to render assistant tokens as soon as they arrive.
+ * Failures that happen before streaming starts still return a JSON error payload
+ * so the client can show a useful message.
  */
 
 import { NextResponse } from "next/server";
 import type {
-  ChatCompletion,
-  ChatCompletionCreateParamsNonStreaming,
+  ChatCompletionCreateParamsStreaming,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
 import { openai, openaiEnabled, NEXA_MODEL } from "@/lib/openai";
@@ -18,29 +17,10 @@ import { toolRegistry } from "@/services/tool-registry";
 
 export const runtime = "nodejs";
 
-const JSON_RESPONSE_FORMAT = {
-  type: "json_schema",
-  json_schema: {
-    name: "nexa_assistant_response",
-    strict: true,
-    schema: {
-      type: "object",
-      properties: {
-        content: {
-          type: "string",
-          description: "The assistant response text to show to the user.",
-        },
-      },
-      required: ["content"],
-      additionalProperties: false,
-    },
-  },
-} as const;
-
-const JSON_SYSTEM_MESSAGE: ChatCompletionMessageParam = {
+const SYSTEM_MESSAGE: ChatCompletionMessageParam = {
   role: "system",
   content:
-    "You are Nexa, a helpful AI automation assistant. Return only valid JSON that matches the requested schema.",
+    "You are Nexa, a helpful AI automation assistant. Reply directly with concise, useful assistant text for the user.",
 };
 
 export async function POST(req: Request) {
@@ -75,24 +55,47 @@ export async function POST(req: Request) {
       function: s,
     }));
 
-    const completionRequest: ChatCompletionCreateParamsNonStreaming = {
+    const completionRequest: ChatCompletionCreateParamsStreaming = {
       model: NEXA_MODEL,
-      messages: [JSON_SYSTEM_MESSAGE, ...messages],
-      stream: false,
-      response_format: JSON_RESPONSE_FORMAT,
+      messages: [SYSTEM_MESSAGE, ...messages],
+      stream: true,
       provider: {
         require_parameters: true,
       },
-    } as ChatCompletionCreateParamsNonStreaming;
+    } as ChatCompletionCreateParamsStreaming;
 
     if (toolSchemas.length > 0) {
       completionRequest.tools = toolSchemas;
     }
 
-    const completion = await openai.chat.completions.create(completionRequest);
-    const normalizedCompletion = normalizeJsonContent(completion);
+    const completionStream = await openai.chat.completions.create(completionRequest);
+    const encoder = new TextEncoder();
 
-    return NextResponse.json(normalizedCompletion);
+    const responseStream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        try {
+          for await (const chunk of completionStream) {
+            const delta = chunk.choices[0]?.delta?.content;
+            if (typeof delta === "string" && delta.length > 0) {
+              controller.enqueue(encoder.encode(delta));
+            }
+          }
+          controller.close();
+        } catch (error) {
+          console.error("OpenRouter provider stream failed", serializeProviderError(error));
+          controller.error(error);
+        }
+      },
+    });
+
+    return new Response(responseStream, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
+      },
+    });
   } catch (error) {
     console.error("OpenRouter provider request failed", serializeProviderError(error));
 
@@ -101,51 +104,6 @@ export async function POST(req: Request) {
       { status: 502 },
     );
   }
-}
-
-function normalizeJsonContent(completion: ChatCompletion): ChatCompletion {
-  const content = completion.choices[0]?.message.content;
-
-  if (typeof content !== "string") {
-    throw new Error("OpenRouter response did not include assistant JSON content.");
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(content);
-  } catch (error) {
-    throw new Error("OpenRouter response content was not valid JSON.", {
-      cause: error,
-    });
-  }
-
-  if (!isNexaAssistantResponse(parsed)) {
-    throw new Error("OpenRouter response JSON did not match the expected schema.");
-  }
-
-  return {
-    ...completion,
-    choices: completion.choices.map((choice, index) =>
-      index === 0
-        ? {
-            ...choice,
-            message: {
-              ...choice.message,
-              content: parsed.content,
-            },
-          }
-        : choice,
-    ),
-  };
-}
-
-function isNexaAssistantResponse(value: unknown): value is { content: string } {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "content" in value &&
-    typeof value.content === "string"
-  );
 }
 
 function serializeProviderError(error: unknown) {
