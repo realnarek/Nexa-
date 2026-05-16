@@ -146,8 +146,7 @@ function MarkdownLite({
 }
 
 function renderInline(text: string, baseOffset: number, revealFrom: number) {
-  // Bold: **text**
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^\s)]+\))/g);
   let offset = baseOffset;
 
   return parts.map((part, index) => {
@@ -163,6 +162,21 @@ function renderInline(text: string, baseOffset: number, revealFrom: number) {
         >
           {renderRevealedText(boldText, partOffset + 2, revealFrom)}
         </strong>
+      );
+    }
+
+    const link = part.match(/^\[([^\]]+)\]\(([^\s)]+)\)$/);
+    if (link) {
+      return (
+        <a
+          key={`${partOffset}-${index}`}
+          href={link[2]}
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary underline underline-offset-4 hover:text-primary/80"
+        >
+          {renderRevealedText(link[1], partOffset + 1, revealFrom)}
+        </a>
       );
     }
 

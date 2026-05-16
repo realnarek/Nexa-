@@ -30,6 +30,7 @@ export function ToolExecutionCard({ call }: ToolExecutionCardProps) {
   const failed = call.status === "failed";
   const duration =
     call.finishedAt ? call.finishedAt - call.startedAt : Date.now() - call.startedAt;
+  const summary = getToolSummary(call);
 
   return (
     <motion.div
@@ -74,13 +75,7 @@ export function ToolExecutionCard({ call }: ToolExecutionCardProps) {
             </Badge>
           </div>
           <div className="font-mono text-[10px] text-muted-foreground truncate mt-0.5">
-            {Object.entries(call.input).slice(0, 2).map(([k, v], i) => (
-              <span key={k}>
-                {i > 0 && " · "}
-                <span className="text-foreground/50">{k}=</span>
-                <span>{truncate(String(v), 40)}</span>
-              </span>
-            ))}
+            {summary}
           </div>
         </div>
 
@@ -150,14 +145,18 @@ export function ToolExecutionCard({ call }: ToolExecutionCardProps) {
 
           {/* Output */}
           {call.output !== undefined && (
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                Output
+            call.toolId === "web_search" ? (
+              <WebSearchOutput output={call.output} />
+            ) : (
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                  Output
+                </div>
+                <pre className="font-mono text-[11px] text-foreground/80 overflow-x-auto scrollbar-thin whitespace-pre-wrap break-all">
+                  {JSON.stringify(call.output, null, 2)}
+                </pre>
               </div>
-              <pre className="font-mono text-[11px] text-foreground/80 overflow-x-auto scrollbar-thin whitespace-pre-wrap break-all">
-                {JSON.stringify(call.output, null, 2)}
-              </pre>
-            </div>
+            )
           )}
 
           {/* Error */}
@@ -178,4 +177,63 @@ export function ToolExecutionCard({ call }: ToolExecutionCardProps) {
 function truncate(s: string, n: number) {
   if (s.length <= n) return s;
   return s.slice(0, n - 1) + "…";
+}
+
+
+function getToolSummary(call: ToolCall) {
+  if (call.toolId === "web_search") {
+    if (call.status === "running" || call.status === "queued") {
+      return call.logs.at(-1)?.message ?? "Searching the web…";
+    }
+
+    const output = call.output as
+      | { resultCount?: number; query?: string }
+      | undefined;
+    if (call.status === "succeeded") {
+      return `Found ${output?.resultCount ?? 0} results`;
+    }
+  }
+
+  const entries = Object.entries(call.input).slice(0, 2);
+  if (entries.length === 0) return call.logs.at(-1)?.message ?? "Running tool";
+
+  return entries
+    .map(([key, value]) => `${key}=${truncate(String(value), 40)}`)
+    .join(" · ");
+}
+
+function WebSearchOutput({ output }: { output: unknown }) {
+  const data = output as {
+    resultCount?: number;
+    results?: Array<{ title?: string; url?: string; snippet?: string }>;
+  };
+
+  return (
+    <div>
+      <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+        Sources
+      </div>
+      <div className="space-y-1.5">
+        {(data.results ?? []).slice(0, 5).map((result, index) => (
+          <a
+            key={result.url ?? index}
+            href={result.url}
+            target="_blank"
+            rel="noreferrer"
+            className="block rounded-md border border-border/70 bg-card/40 p-2 text-[11px] hover:bg-accent/30 transition-colors"
+          >
+            <div className="font-medium text-foreground/90 truncate">
+              {result.title ?? "Untitled result"}
+            </div>
+            <div className="text-primary/80 truncate">{result.url}</div>
+            {result.snippet && (
+              <div className="text-muted-foreground line-clamp-2 mt-1">
+                {result.snippet}
+              </div>
+            )}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
 }

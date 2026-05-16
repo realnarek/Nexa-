@@ -11,7 +11,7 @@ This repo is the **demo MVP**: a runnable, investor-ready scaffold that communic
 ## What's inside
 
 - **Agent chat** — streaming responses with a visible plan, live tool-execution cards, and expandable input / logs / output per tool call.
-- **Tool system** — typed, modular `ToolDefinition` contracts. Five demo tools (Web Search, Notes, Calendar, Email Draft, Task Creator) registered through a single registry.
+- **Tool system** — typed, modular `ToolDefinition` contracts with OpenAI-compatible function schemas and server-side execution handlers.
 - **Workflow history** — every agent run is persisted with its plan, tool calls, durations, and outcome.
 - **Tasks** — quick-add, status toggles, filters; agent-created tasks land here automatically.
 - **Integrations** — visual catalog of every registered tool with parameter schemas.
@@ -34,7 +34,7 @@ This repo is the **demo MVP**: a runnable, investor-ready scaffold that communic
 | Animation        | Framer Motion                             |
 | Command palette  | cmdk                                      |
 | Auth & DB        | Supabase (optional)                       |
-| LLM              | OpenAI SDK (optional — falls back to mock)|
+| LLM              | OpenRouter chat completions + tool calling |
 | Fonts            | Geist Sans / Geist Mono / Instrument Serif|
 
 ---
@@ -49,17 +49,26 @@ cp .env.local.example .env.local   # optional — demo runs without it
 npm run dev
 ```
 
-Open <http://localhost:3000>. Click **Continue as guest** to skip auth. The agent works fully without any API keys — it uses a deterministic mock orchestrator that streams realistic plans and tool executions.
+Open <http://localhost:3000>. Click **Continue as guest** to skip auth.
 
-### Going live
+### Live agent configuration
 
-The architecture is built for graceful upgrade. Each subsystem swaps independently:
+Nexa now routes chat through `/api/agent` and requires a live OpenRouter key for assistant responses. Real-time web search is provided by Tavily or Serper; set at least one search key to enable the `web_search` tool.
 
-| Demo mode (default)                  | Production                                     |
+```bash
+OPENROUTER_API_KEY=...
+OPENROUTER_MODEL=...
+TAVILY_API_KEY=...   # preferred web search provider
+# or
+SERPER_API_KEY=...   # fallback web search provider
+```
+
+The model decides when to call `web_search`. The server executes the real search provider, streams “Searching the web…” / “Found X results” tool events to the UI, then streams the final synthesized answer with markdown citation links.
+
+| Local state/auth                     | Production                                     |
 | ------------------------------------ | ---------------------------------------------- |
-| Mock orchestrator in `services/agent.service.ts` | Set `OPENROUTER_API_KEY` and route through `/api/agent` |
 | `localStorage` auth via Zustand      | Set `NEXT_PUBLIC_SUPABASE_*`, use `lib/supabase.ts`  |
-| Tool `execute()` returns fake data   | Replace per-tool `execute()` with real API calls    |
+| Tool definitions in `services/tool-registry.ts` | Add more server-side handlers under `services/tools/` |
 
 ---
 
@@ -83,7 +92,8 @@ nexa/
 │   └── tools/                  # One file per tool (typed, self-contained)
 ├── services/
 │   ├── tool-registry.ts        # Central catalog + OpenAI function schemas
-│   └── agent.service.ts        # Orchestrator: plan → execute → stream reply
+│   ├── tools/                  # Server-side tool implementations
+│   └── agent.service.ts        # Browser SSE adapter for agent events
 ├── store/                      # Zustand stores (auth, chat, tasks, workflows, ui)
 ├── lib/                        # utils, supabase, openai, config, seed data
 ├── types/                      # Core contracts: agent, tools, workflow, user
@@ -105,20 +115,20 @@ User input
    ▼
 runAgent(request) — async generator emitting typed events
    │
-   ├── plan                  → store sets currentPlan
    ├── tool_call.queued      → UI renders ToolExecutionCard (running)
+   ├── tool_call.log         → UI updates visible status lines
    ├── tool_call.result      → UI updates card (succeeded / failed)
    ├── assistant_delta       → UI streams text into message bubble
    └── done                  → store finalizes message; workflow saved
 ```
 
-This same shape will hold when you swap the mock for a real LLM tool-calling loop — the UI doesn't need to change.
+The server endpoint performs the OpenRouter tool-calling loop, executes registered tools, appends tool results back to the model, and streams the final answer without exposing raw tool JSON in chat.
 
 ### Adding a new tool
 
-1. Drop a file in `features/tools/<name>.tool.ts` implementing `ToolDefinition`.
-2. Register it in `services/tool-registry.ts`.
-3. That's it. The agent's planner sees it. The integrations page lists it. The command palette indexes it.
+1. Add a server implementation under `services/tools/<name>.ts`.
+2. Register its metadata, JSON schema parameters, and execute handler in `services/tool-registry.ts`.
+3. That's it. The model sees the tool schema, the integrations page lists it, and the chat UI can render execution events.
 
 ```ts
 // features/tools/slack.tool.ts
@@ -168,7 +178,7 @@ npm run type-check   # tsc --noEmit
 
 ## Status
 
-This is an early-access scaffold (v0.1). The mock orchestrator is deterministic, the persistence layer is `localStorage`, and the agent doesn't yet talk to real APIs. The contracts are stable, though — the goal is that swapping in production services is a file-by-file upgrade, not a rewrite.
+This is an early-access scaffold (v0.1). Chat responses use a live OpenRouter-backed agent endpoint, and `web_search` uses Tavily or Serper when configured. The persistence layer is still `localStorage`, while the tool contracts are designed for file-by-file expansion.
 
 ---
 
