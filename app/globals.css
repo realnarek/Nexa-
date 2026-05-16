@@ -120,6 +120,41 @@
     background-size: 24px 24px;
   }
 
+  /* Assistant streaming text: subtle fade/glow for newly revealed prose */
+  .assistant-text-reveal {
+    display: inline;
+    animation: assistant-text-reveal 420ms cubic-bezier(0.22, 1, 0.36, 1)
+      both;
+    will-change: opacity, filter, text-shadow;
+  }
+
+  @keyframes assistant-text-reveal {
+    0% {
+      opacity: 0;
+      filter: blur(3px) brightness(1.25);
+      text-shadow: 0 0 14px hsl(var(--primary) / 0.32);
+    }
+    45% {
+      opacity: 0.88;
+      filter: blur(0.5px) brightness(1.08);
+      text-shadow: 0 0 8px hsl(var(--primary) / 0.18);
+    }
+    100% {
+      opacity: 1;
+      filter: blur(0) brightness(1);
+      text-shadow: 0 0 0 hsl(var(--primary) / 0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .assistant-text-reveal {
+      animation: none;
+      opacity: 1;
+      filter: none;
+      text-shadow: none;
+    }
+  }
+
   /* Caret animation for typing */
   .caret::after {
     content: "▍";

@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types";
@@ -16,7 +17,18 @@ export function MessageBubble({ message, userName }: MessageBubbleProps) {
   const renderedContent = isUser
     ? message.content
     : sanitizeAssistantContent(message.content);
-  const shouldRenderContent = Boolean(renderedContent || (message.streaming && !isUser));
+  const shouldRenderContent = Boolean(
+    renderedContent || (message.streaming && !isUser),
+  );
+  const previousAssistantLength = React.useRef(renderedContent.length);
+  const revealFrom =
+    message.streaming && !isUser
+      ? previousAssistantLength.current
+      : renderedContent.length;
+
+  React.useEffect(() => {
+    previousAssistantLength.current = renderedContent.length;
+  }, [renderedContent]);
 
   return (
     <motion.div
@@ -67,7 +79,7 @@ export function MessageBubble({ message, userName }: MessageBubbleProps) {
             )}
           >
             {renderedContent ? (
-              <MarkdownLite content={renderedContent} />
+              <MarkdownLite content={renderedContent} revealFrom={revealFrom} />
             ) : (
               <TypingIndicator />
             )}
@@ -93,38 +105,92 @@ function sanitizeAssistantContent(content: string) {
  * Tiny markdown subset renderer — bold + bullets + linebreaks.
  * Avoids adding a full markdown lib to the bundle for a demo.
  */
-function MarkdownLite({ content }: { content: string }) {
+function MarkdownLite({
+  content,
+  revealFrom = content.length,
+}: {
+  content: string;
+  revealFrom?: number;
+}) {
   const lines = content.split("\n");
+  let lineStart = 0;
   return (
     <div className="space-y-1.5">
       {lines.map((line, i) => {
+        const currentLineStart = lineStart;
+        lineStart += line.length + 1;
+
         if (!line.trim()) return <div key={i} className="h-2" />;
         const bullet = line.match(/^•\s+(.*)$/);
         if (bullet) {
+          const bulletTextOffset = currentLineStart + line.indexOf(bullet[1]);
           return (
             <div key={i} className="flex gap-2.5 pl-1">
               <span className="text-primary mt-1 size-1 rounded-full bg-primary shrink-0" />
-              <span className="flex-1">{renderInline(bullet[1])}</span>
+              <span className="flex-1">
+                {renderInline(bullet[1], bulletTextOffset, revealFrom)}
+              </span>
             </div>
           );
         }
-        return <p key={i}>{renderInline(line)}</p>;
+        return (
+          <p key={i}>{renderInline(line, currentLineStart, revealFrom)}</p>
+        );
       })}
     </div>
   );
 }
 
-function renderInline(text: string) {
+function renderInline(text: string, baseOffset: number, revealFrom: number) {
   // Bold: **text**
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((p, i) =>
-    p.startsWith("**") && p.endsWith("**") ? (
-      <strong key={i} className="font-semibold text-foreground">
-        {p.slice(2, -2)}
-      </strong>
-    ) : (
-      <span key={i}>{p}</span>
-    ),
+  let offset = baseOffset;
+
+  return parts.map((part, index) => {
+    const partOffset = offset;
+    offset += part.length;
+
+    if (part.startsWith("**") && part.endsWith("**")) {
+      const boldText = part.slice(2, -2);
+      return (
+        <strong
+          key={`${partOffset}-${index}`}
+          className="font-semibold text-foreground"
+        >
+          {renderRevealedText(boldText, partOffset + 2, revealFrom)}
+        </strong>
+      );
+    }
+
+    return (
+      <span key={`${partOffset}-${index}`}>
+        {renderRevealedText(part, partOffset, revealFrom)}
+      </span>
+    );
+  });
+}
+
+function renderRevealedText(
+  text: string,
+  baseOffset: number,
+  revealFrom: number,
+) {
+  if (!text) return null;
+
+  const nodeEnd = baseOffset + text.length;
+  if (nodeEnd <= revealFrom) return text;
+
+  const splitAt = Math.max(0, revealFrom - baseOffset);
+  const stableText = text.slice(0, splitAt);
+  const revealingText = text.slice(splitAt);
+
+  return (
+    <>
+      {stableText}
+      {revealingText && (
+        <span className="assistant-text-reveal">{revealingText}</span>
+      )}
+    </>
   );
 }
 
