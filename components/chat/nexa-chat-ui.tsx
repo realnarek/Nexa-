@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu,
@@ -16,32 +18,31 @@ import {
   MoreVertical,
   ChevronRight,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, timeAgo } from "@/lib/utils";
+import { useChatStore } from "@/store/chat-store";
+import { useAuthStore } from "@/store/auth-store";
+import { useUIStore } from "@/store/ui-store";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface Message {
+interface DemoMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
 }
 
-interface RecentChat {
-  id: string;
-  title: string;
-  preview: string;
-  time: string;
-}
+type NavItem =
+  | { icon: React.ElementType; label: string; shortcut: string; isCommand: true }
+  | { icon: React.ElementType; label: string; href: string; isCommand?: false };
 
-// ─── Sample data ─────────────────────────────────────────────────────────────
+// ─── Static data ─────────────────────────────────────────────────────────────
 
-const INITIAL_MESSAGES: Message[] = [
+const DEMO_MESSAGES: DemoMessage[] = [
   {
     id: "1",
     role: "user",
-    content:
-      "Generate 5 startup ideas in climate tech and save them as a note",
+    content: "Generate 5 startup ideas in climate tech and save them as a note",
     timestamp: new Date(Date.now() - 120_000),
   },
   {
@@ -67,46 +68,13 @@ Provides verification and monitoring services for ocean alkalinity enhancement a
   },
 ];
 
-const NAV_ITEMS = [
-  { icon: Sparkles, label: "Quick command…", shortcut: "⌘K" },
-  { icon: MessageSquare, label: "Agent" },
-  { icon: ListChecks, label: "Tasks" },
-  { icon: Workflow, label: "Workflows" },
-  { icon: Plug, label: "Integrations" },
-  { icon: Settings, label: "Settings" },
-];
-
-const RECENT_CHATS: RecentChat[] = [
-  {
-    id: "r1",
-    title: "Climate tech startup ideas",
-    preview: "Generate 5 startup ideas…",
-    time: "2m ago",
-  },
-  {
-    id: "r2",
-    title: "Q3 marketing strategy",
-    preview: "Draft a comprehensive plan…",
-    time: "1h ago",
-  },
-  {
-    id: "r3",
-    title: "Competitor analysis",
-    preview: "Research top 5 competitors…",
-    time: "3h ago",
-  },
-  {
-    id: "r4",
-    title: "Product roadmap review",
-    preview: "Summarize the key priorities…",
-    time: "Yesterday",
-  },
-  {
-    id: "r5",
-    title: "Email campaign draft",
-    preview: "Write a follow-up email…",
-    time: "2d ago",
-  },
+const NAV_ITEMS: NavItem[] = [
+  { icon: Sparkles, label: "Quick command…", shortcut: "⌘K", isCommand: true },
+  { icon: MessageSquare, label: "Agent", href: "/chat" },
+  { icon: ListChecks, label: "Tasks", href: "/tasks" },
+  { icon: Workflow, label: "Workflows", href: "/workflows" },
+  { icon: Plug, label: "Integrations", href: "/integrations" },
+  { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -141,7 +109,7 @@ function AssistantContent({ text }: { text: string }) {
   );
 }
 
-function MessageBubble({ msg }: { msg: Message }) {
+function DemoMessageBubble({ msg }: { msg: DemoMessage }) {
   const isUser = msg.role === "user";
 
   return (
@@ -154,7 +122,6 @@ function MessageBubble({ msg }: { msg: Message }) {
         isUser ? "flex-row-reverse" : "flex-row",
       )}
     >
-      {/* Avatar */}
       <div
         className={cn(
           "flex-shrink-0 size-8 rounded-full grid place-items-center text-xs font-semibold",
@@ -166,7 +133,6 @@ function MessageBubble({ msg }: { msg: Message }) {
         {isUser ? "U" : "N"}
       </div>
 
-      {/* Content */}
       <div
         className={cn(
           "max-w-[78%] rounded-2xl px-4 py-3",
@@ -183,7 +149,9 @@ function MessageBubble({ msg }: { msg: Message }) {
         <p
           className={cn(
             "text-[10px] mt-2 font-mono",
-            isUser ? "text-right text-[rgba(255,255,255,0.4)]" : "text-[rgba(255,255,255,0.3)]",
+            isUser
+              ? "text-right text-[rgba(255,255,255,0.4)]"
+              : "text-[rgba(255,255,255,0.3)]",
           )}
         >
           {formatTime(msg.timestamp)}
@@ -195,63 +163,80 @@ function MessageBubble({ msg }: { msg: Message }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function NexaChatUI() {
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
-  const [messages, setMessages] = React.useState<Message[]>(INITIAL_MESSAGES);
+export function NexaChatUI({ children }: { children?: React.ReactNode }) {
+  const isLayoutMode = !!children;
+
+  // UI store
+  const mobileSidebarOpen = useUIStore((s) => s.mobileSidebarOpen);
+  const setMobileSidebarOpen = useUIStore((s) => s.setMobileSidebarOpen);
+  const setCommandOpen = useUIStore((s) => s.setCommandOpen);
+
+  // Chat store
+  const conversations = useChatStore((s) => s.conversations);
+  const activeId = useChatStore((s) => s.activeId);
+  const newConversation = useChatStore((s) => s.newConversation);
+  const setActive = useChatStore((s) => s.setActive);
+
+  // Auth store
+  const user = useAuthStore((s) => s.user);
+
+  // Routing
+  const pathname = usePathname();
+
+  // Standalone demo state
+  const [demoMessages, setDemoMessages] = React.useState<DemoMessage[]>(DEMO_MESSAGES);
   const [inputValue, setInputValue] = React.useState("");
-  const [activeNav, setActiveNav] = React.useState("Agent");
-  const [activeChat, setActiveChat] = React.useState("r1");
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // Scroll to bottom when messages change
   React.useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!isLayoutMode) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [demoMessages, isLayoutMode]);
 
-  // Close sidebar on resize to desktop
+  // Close sidebar when resizing to desktop
   React.useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
     const handler = (e: MediaQueryListEvent) => {
-      if (e.matches) setSidebarOpen(false);
+      if (e.matches) setMobileSidebarOpen(false);
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, []);
+  }, [setMobileSidebarOpen]);
 
-  const sendMessage = () => {
+  const sendDemoMessage = () => {
     const text = inputValue.trim();
     if (!text) return;
 
-    const userMsg: Message = {
+    const userMsg: DemoMessage = {
       id: nanoid(),
       role: "user",
       content: text,
       timestamp: new Date(),
     };
-    setMessages((prev) => [...prev, userMsg]);
+    setDemoMessages((prev) => [...prev, userMsg]);
     setInputValue("");
 
-    // Simulate assistant response
     setTimeout(() => {
-      const assistantMsg: Message = {
+      const assistantMsg: DemoMessage = {
         id: nanoid(),
         role: "assistant",
         content: `I've received your message: "${text}"\n\nI'm processing your request now. As Nexa AI Agent, I'll help you accomplish this task step by step.`,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, assistantMsg]);
+      setDemoMessages((prev) => [...prev, assistantMsg]);
     }, 800);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      sendDemoMessage();
     }
   };
 
-  const closeSidebar = () => setSidebarOpen(false);
+  const closeSidebar = () => setMobileSidebarOpen(false);
 
   return (
     <div
@@ -260,7 +245,7 @@ export function NexaChatUI() {
     >
       {/* ── Mobile overlay ── */}
       <AnimatePresence>
-        {sidebarOpen && (
+        {mobileSidebarOpen && (
           <motion.div
             key="overlay"
             initial={{ opacity: 0 }}
@@ -277,27 +262,23 @@ export function NexaChatUI() {
       {/* ── Sidebar ── */}
       <aside
         className={cn(
-          // Mobile: fixed overlay
           "fixed inset-y-0 left-0 z-40 flex w-full flex-col",
           "transition-transform duration-300",
           "md:relative md:z-auto md:w-[280px] md:shrink-0 md:translate-x-0 md:flex",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         )}
         style={{
           background: "#0f1419",
           borderRight: "1px solid rgba(255,255,255,0.08)",
-          // cubic-bezier override via inline style for the specific easing
-          transitionTimingFunction: sidebarOpen
-            ? "cubic-bezier(0.4, 0, 0.2, 1)"
-            : "cubic-bezier(0.4, 0, 0.2, 1)",
+          transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
-        {/* Sidebar header */}
+        {/* Header */}
         <div
           className="flex h-14 shrink-0 items-center justify-between px-4"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
         >
-          <div className="flex items-center gap-2">
+          <Link href="/chat" onClick={closeSidebar} className="flex items-center gap-2">
             <div
               className="flex items-center justify-center size-7 rounded-lg font-bold text-sm"
               style={{ background: "#d4a574", color: "#0a0e27" }}
@@ -315,7 +296,8 @@ export function NexaChatUI() {
             >
               BETA
             </span>
-          </div>
+          </Link>
+
           {/* Close button — mobile only */}
           <button
             onClick={closeSidebar}
@@ -337,26 +319,55 @@ export function NexaChatUI() {
         <nav className="px-2 pt-3 pb-2 space-y-0.5">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const isActive = activeNav === item.label;
+            const isActive =
+              !item.isCommand && "href" in item && pathname.startsWith(item.href);
+
+            if (item.isCommand) {
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => {
+                    setCommandOpen(true);
+                    closeSidebar();
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-sm text-left transition-colors min-h-[44px]"
+                  style={{ color: "rgba(255,255,255,0.55)" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                    e.currentTarget.style.color = "#ffffff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "rgba(255,255,255,0.55)";
+                  }}
+                >
+                  <Icon size={15} className="shrink-0" />
+                  <span className="flex-1">{item.label}</span>
+                  <kbd
+                    className="font-mono text-[9px] px-1 rounded"
+                    style={{
+                      background: "rgba(255,255,255,0.08)",
+                      color: "rgba(255,255,255,0.35)",
+                    }}
+                  >
+                    {item.shortcut}
+                  </kbd>
+                </button>
+              );
+            }
+
             return (
-              <button
+              <Link
                 key={item.label}
-                onClick={() => {
-                  setActiveNav(item.label);
-                  if (window.innerWidth < 768) closeSidebar();
-                }}
-                className={cn(
-                  "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-sm text-left transition-colors min-h-[44px]",
-                )}
+                href={item.href}
+                onClick={closeSidebar}
+                className="flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm transition-colors min-h-[44px]"
                 style={{
-                  background: isActive
-                    ? "rgba(255,255,255,0.08)"
-                    : "transparent",
+                  background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
                   color: isActive ? "#ffffff" : "rgba(255,255,255,0.55)",
                 }}
                 onMouseEnter={(e) => {
-                  if (!isActive)
-                    e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                  if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.05)";
                   e.currentTarget.style.color = "#ffffff";
                 }}
                 onMouseLeave={(e) => {
@@ -369,19 +380,8 @@ export function NexaChatUI() {
                 }}
               >
                 <Icon size={15} className="shrink-0" />
-                <span className="flex-1">{item.label}</span>
-                {item.shortcut && (
-                  <kbd
-                    className="font-mono text-[9px] px-1 rounded"
-                    style={{
-                      background: "rgba(255,255,255,0.08)",
-                      color: "rgba(255,255,255,0.35)",
-                    }}
-                  >
-                    {item.shortcut}
-                  </kbd>
-                )}
-              </button>
+                <span>{item.label}</span>
+              </Link>
             );
           })}
         </nav>
@@ -392,7 +392,7 @@ export function NexaChatUI() {
           style={{ height: 1, background: "rgba(255,255,255,0.08)" }}
         />
 
-        {/* Recent section */}
+        {/* Recent conversations */}
         <div className="flex items-center justify-between px-4 py-2.5">
           <span
             className="font-mono text-[10px] uppercase tracking-widest"
@@ -402,15 +402,8 @@ export function NexaChatUI() {
           </span>
           <button
             onClick={() => {
-              const newChat: RecentChat = {
-                id: nanoid(),
-                title: "New chat",
-                preview: "Start a conversation…",
-                time: "just now",
-              };
-              setActiveChat(newChat.id);
-              setMessages([]);
-              if (window.innerWidth < 768) closeSidebar();
+              newConversation();
+              closeSidebar();
             }}
             className="grid place-items-center size-6 rounded-md transition-colors"
             style={{ color: "rgba(255,255,255,0.5)" }}
@@ -422,7 +415,7 @@ export function NexaChatUI() {
               e.currentTarget.style.background = "transparent";
               e.currentTarget.style.color = "rgba(255,255,255,0.5)";
             }}
-            aria-label="New chat"
+            aria-label="New conversation"
           >
             <Plus size={13} />
           </button>
@@ -430,58 +423,57 @@ export function NexaChatUI() {
 
         <div className="flex-1 overflow-y-auto px-2 pb-3 scrollbar-thin">
           <ul className="space-y-0.5">
-            {RECENT_CHATS.map((chat) => {
-              const isActive = activeChat === chat.id;
-              return (
-                <li key={chat.id}>
-                  <button
-                    onClick={() => {
-                      setActiveChat(chat.id);
-                      if (window.innerWidth < 768) closeSidebar();
-                    }}
-                    className="w-full rounded-md px-3 py-2 text-left transition-colors min-h-[44px]"
-                    style={{
-                      background: isActive
-                        ? "rgba(255,255,255,0.08)"
-                        : "transparent",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isActive)
-                        e.currentTarget.style.background =
-                          "rgba(255,255,255,0.05)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = isActive
-                        ? "rgba(255,255,255,0.08)"
-                        : "transparent";
-                    }}
-                  >
-                    <div
-                      className="text-sm font-medium truncate"
-                      style={{ color: isActive ? "#ffffff" : "rgba(255,255,255,0.7)" }}
+            {conversations.length === 0 ? (
+              <li
+                className="px-3 py-4 text-center text-xs"
+                style={{ color: "rgba(255,255,255,0.35)" }}
+              >
+                No conversations yet
+              </li>
+            ) : (
+              conversations.slice(0, 12).map((c) => {
+                const isActive = c.id === activeId;
+                return (
+                  <li key={c.id}>
+                    <Link
+                      href="/chat"
+                      onClick={() => {
+                        setActive(c.id);
+                        closeSidebar();
+                      }}
+                      className="block w-full rounded-md px-3 py-2 text-left transition-colors min-h-[44px]"
+                      style={{
+                        background: isActive
+                          ? "rgba(255,255,255,0.08)"
+                          : "transparent",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive)
+                          e.currentTarget.style.background =
+                            "rgba(255,255,255,0.05)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = isActive
+                          ? "rgba(255,255,255,0.08)"
+                          : "transparent";
+                      }}
                     >
-                      {chat.title}
-                    </div>
-                    <div
-                      className="flex items-center justify-between mt-0.5"
-                    >
-                      <span
-                        className="text-[11px] truncate"
-                        style={{ color: "rgba(255,255,255,0.35)" }}
+                      <div
+                        className="text-sm font-medium truncate"
+                        style={{
+                          color: isActive ? "#ffffff" : "rgba(255,255,255,0.7)",
+                        }}
                       >
-                        {chat.preview}
-                      </span>
-                      <span
-                        className="font-mono text-[10px] ml-2 shrink-0"
-                        style={{ color: "rgba(255,255,255,0.3)" }}
-                      >
-                        {chat.time}
-                      </span>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
+                        {c.title}
+                      </div>
+                      <div className="font-mono text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
+                        {timeAgo(c.updatedAt)}
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })
+            )}
           </ul>
         </div>
 
@@ -492,9 +484,8 @@ export function NexaChatUI() {
         >
           <button
             onClick={() => {
-              setMessages([]);
-              setActiveChat("");
-              if (window.innerWidth < 768) closeSidebar();
+              newConversation();
+              closeSidebar();
             }}
             className="flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors min-h-[44px]"
             style={{
@@ -513,155 +504,200 @@ export function NexaChatUI() {
             Create new chat
           </button>
         </div>
+
+        {/* User profile */}
+        <Link
+          href="/settings"
+          onClick={closeSidebar}
+          className="flex items-center gap-3 px-4 py-3 transition-colors"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+          }}
+        >
+          <div
+            className="flex-shrink-0 size-8 rounded-full grid place-items-center text-xs font-semibold"
+            style={{ background: "#d4a574", color: "#0a0e27" }}
+          >
+            {user?.name?.[0]?.toUpperCase() ?? "U"}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="truncate text-sm font-medium text-white">
+              {user?.name ?? "Operator"}
+            </div>
+            <div
+              className="truncate text-[11px]"
+              style={{ color: "rgba(255,255,255,0.4)" }}
+            >
+              {user?.isGuest ? "Guest session" : user?.email}
+            </div>
+          </div>
+        </Link>
       </aside>
 
       {/* ── Main area ── */}
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-        {/* ── Header ── */}
-        <header
-          className="flex h-14 shrink-0 items-center justify-between px-4 gap-3"
-          style={{
-            background: "#0a0e27",
-            borderBottom: "1px solid rgba(255,255,255,0.1)",
-            position: "sticky",
-            top: 0,
-            zIndex: 20,
-          }}
-        >
-          {/* Left: hamburger (mobile only) */}
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="md:hidden grid place-items-center size-10 rounded-md transition-colors"
-            style={{ color: "rgba(255,255,255,0.7)" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-            }}
-            aria-label="Open menu"
-          >
-            <Menu size={20} />
-          </button>
-
-          {/* Center: title */}
-          <div className="flex-1 flex items-center justify-center md:justify-start">
-            <h1 className="font-semibold text-base text-white tracking-wide">
-              Nexa
-            </h1>
-            <ChevronRight
-              size={14}
-              className="mx-1 hidden md:block"
-              style={{ color: "rgba(255,255,255,0.3)" }}
-            />
-            <span
-              className="text-sm hidden md:block"
-              style={{ color: "rgba(255,255,255,0.5)" }}
-            >
-              Climate Tech Ideas
-            </span>
-          </div>
-
-          {/* Right: badge + three-dot */}
-          <div className="flex items-center gap-2">
-            <button
-              className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-mono font-semibold transition-colors min-h-[32px]"
+      <div
+        className={cn(
+          "flex flex-1 flex-col min-w-0 overflow-hidden",
+          isLayoutMode && "bg-background text-foreground",
+        )}
+      >
+        {isLayoutMode ? (
+          // Layout mode: children supply their own header (TopBar) and content
+          <>{children}</>
+        ) : (
+          // Standalone demo mode: own header + demo messages + input
+          <>
+            {/* ── Header ── */}
+            <header
+              className="flex h-14 shrink-0 items-center justify-between px-4 gap-3"
               style={{
-                background: "rgba(212,165,116,0.15)",
-                color: "#d4a574",
-                border: "1px solid rgba(212,165,116,0.25)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(212,165,116,0.25)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(212,165,116,0.15)";
+                background: "#0a0e27",
+                borderBottom: "1px solid rgba(255,255,255,0.1)",
+                position: "sticky",
+                top: 0,
+                zIndex: 20,
               }}
             >
-              85
-            </button>
-            <button
-              className="grid place-items-center size-9 rounded-md transition-colors"
-              style={{ color: "rgba(255,255,255,0.6)" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-                e.currentTarget.style.color = "#ffffff";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "rgba(255,255,255,0.6)";
-              }}
-              aria-label="More options"
-            >
-              <MoreVertical size={16} />
-            </button>
-          </div>
-        </header>
-
-        {/* ── Messages ── */}
-        <div
-          className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin"
-          style={{ scrollBehavior: "smooth" }}
-        >
-          <div className="max-w-2xl mx-auto w-full space-y-6">
-            {messages.map((msg) => (
-              <MessageBubble key={msg.id} msg={msg} />
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-        </div>
-
-        {/* ── Input area ── */}
-        <div
-          className="shrink-0 px-4 py-4"
-          style={{
-            background: "linear-gradient(to top, #0a0e27 80%, transparent)",
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
-          <div className="max-w-2xl mx-auto w-full">
-            <div
-              className="flex items-center gap-3 rounded-2xl px-4 py-1"
-              style={{
-                background: "#111827",
-                border: "1px solid rgba(255,255,255,0.12)",
-              }}
-            >
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask Nexa anything..."
-                className="flex-1 bg-transparent py-3 text-sm text-white placeholder-[rgba(255,255,255,0.35)] outline-none min-h-[48px]"
-              />
+              {/* Hamburger — mobile only */}
               <button
-                onClick={sendMessage}
-                disabled={!inputValue.trim()}
-                className="grid place-items-center size-9 rounded-xl shrink-0 transition-all duration-150"
-                style={{
-                  background: inputValue.trim()
-                    ? "#d4a574"
-                    : "rgba(255,255,255,0.08)",
-                  color: inputValue.trim()
-                    ? "#0a0e27"
-                    : "rgba(255,255,255,0.25)",
-                  cursor: inputValue.trim() ? "pointer" : "not-allowed",
+                onClick={() => setMobileSidebarOpen(true)}
+                className="md:hidden grid place-items-center size-10 rounded-md transition-colors"
+                style={{ color: "rgba(255,255,255,0.7)" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.08)";
                 }}
-                aria-label="Send message"
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+                aria-label="Open menu"
               >
-                <ArrowUp size={16} />
+                <Menu size={20} />
               </button>
-            </div>
-            <p
-              className="text-center text-[10px] font-mono mt-2"
-              style={{ color: "rgba(255,255,255,0.2)" }}
+
+              {/* Title */}
+              <div className="flex-1 flex items-center justify-center md:justify-start">
+                <h1 className="font-semibold text-base text-white tracking-wide">
+                  Nexa
+                </h1>
+                <ChevronRight
+                  size={14}
+                  className="mx-1 hidden md:block"
+                  style={{ color: "rgba(255,255,255,0.3)" }}
+                />
+                <span
+                  className="text-sm hidden md:block"
+                  style={{ color: "rgba(255,255,255,0.5)" }}
+                >
+                  Climate Tech Ideas
+                </span>
+              </div>
+
+              {/* Right actions */}
+              <div className="flex items-center gap-2">
+                <button
+                  className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-mono font-semibold transition-colors min-h-[32px]"
+                  style={{
+                    background: "rgba(212,165,116,0.15)",
+                    color: "#d4a574",
+                    border: "1px solid rgba(212,165,116,0.25)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(212,165,116,0.25)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(212,165,116,0.15)";
+                  }}
+                >
+                  85
+                </button>
+                <button
+                  className="grid place-items-center size-9 rounded-md transition-colors"
+                  style={{ color: "rgba(255,255,255,0.6)" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                    e.currentTarget.style.color = "#ffffff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "rgba(255,255,255,0.6)";
+                  }}
+                  aria-label="More options"
+                >
+                  <MoreVertical size={16} />
+                </button>
+              </div>
+            </header>
+
+            {/* ── Messages ── */}
+            <div
+              className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin"
+              style={{ scrollBehavior: "smooth" }}
             >
-              Nexa Agent · v0.1 — press Enter to send
-            </p>
-          </div>
-        </div>
+              <div className="max-w-2xl mx-auto w-full space-y-6">
+                {demoMessages.map((msg) => (
+                  <DemoMessageBubble key={msg.id} msg={msg} />
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            </div>
+
+            {/* ── Input ── */}
+            <div
+              className="shrink-0 px-4 py-4"
+              style={{
+                background: "linear-gradient(to top, #0a0e27 80%, transparent)",
+                borderTop: "1px solid rgba(255,255,255,0.06)",
+              }}
+            >
+              <div className="max-w-2xl mx-auto w-full">
+                <div
+                  className="flex items-center gap-3 rounded-2xl px-4 py-1"
+                  style={{
+                    background: "#111827",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                  }}
+                >
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask Nexa anything..."
+                    className="flex-1 bg-transparent py-3 text-sm text-white placeholder-[rgba(255,255,255,0.35)] outline-none min-h-[48px]"
+                  />
+                  <button
+                    onClick={sendDemoMessage}
+                    disabled={!inputValue.trim()}
+                    className="grid place-items-center size-9 rounded-xl shrink-0 transition-all duration-150"
+                    style={{
+                      background: inputValue.trim()
+                        ? "#d4a574"
+                        : "rgba(255,255,255,0.08)",
+                      color: inputValue.trim()
+                        ? "#0a0e27"
+                        : "rgba(255,255,255,0.25)",
+                      cursor: inputValue.trim() ? "pointer" : "not-allowed",
+                    }}
+                    aria-label="Send message"
+                  >
+                    <ArrowUp size={16} />
+                  </button>
+                </div>
+                <p
+                  className="text-center text-[10px] font-mono mt-2"
+                  style={{ color: "rgba(255,255,255,0.2)" }}
+                >
+                  Nexa Agent · v0.1 — press Enter to send
+                </p>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
