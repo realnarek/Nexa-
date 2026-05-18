@@ -57,7 +57,10 @@ export function ChatComposer() {
   };
 
   return (
-    <div className="px-4 md:px-8 pb-6 pt-4 bg-gradient-to-t from-background via-background/95 to-transparent">
+    <div
+      className="px-3 md:px-6 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent"
+      style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
+    >
       <div className="max-w-3xl mx-auto">
         <motion.div
           layout
@@ -78,9 +81,9 @@ export function ChatComposer() {
             }
             disabled={busy}
             rows={1}
-            className="border-0 bg-transparent px-5 py-4 text-[15px] focus-visible:ring-0 max-h-[200px]"
+            className="border-0 bg-transparent px-4 py-3 text-[15px] focus-visible:ring-0 max-h-[160px]"
           />
-          <div className="flex items-center justify-between px-3 pb-2.5">
+          <div className="flex items-center justify-between px-3 pb-2">
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon-sm" disabled aria-label="Attach">
                 <Paperclip className="size-3.5" />
@@ -114,12 +117,12 @@ export function ChatComposer() {
         </motion.div>
 
         {!busy && (
-          <div className="flex flex-wrap gap-2 mt-3 justify-center">
+          <div className="flex flex-wrap gap-1.5 mt-2.5 justify-center">
             {QUICK_PROMPTS.map((p) => (
               <button
                 key={p}
                 onClick={() => setValue(p)}
-                className="rounded-full border border-border bg-card/40 px-3 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                className="rounded-full border border-border bg-card/40 px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               >
                 {p}
               </button>

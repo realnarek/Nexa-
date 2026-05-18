@@ -38,8 +38,8 @@ export default function ChatPage() {
 
       <div className="flex-1 flex flex-col min-h-0">
         {hasMessages ? (
-          <div ref={scrollerRef} className="flex-1 overflow-y-auto scrollbar-thin">
-            <div className="max-w-3xl mx-auto px-4 md:px-8 py-4">
+          <div ref={scrollerRef} className="flex-1 overflow-y-auto overscroll-contain scrollbar-thin">
+            <div className="max-w-3xl mx-auto px-3 md:px-6 py-3 md:py-4">
               {messages.map((m) => (
                 <MessageBubble key={m.id} message={m} userName={user?.name} />
               ))}

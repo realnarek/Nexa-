@@ -59,6 +59,8 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv11", "ss01", "ss03";
+    /* Prevent elastic overscroll at the page level */
+    overscroll-behavior: none;
   }
   body {
     text-rendering: optimizeLegibility;
@@ -215,5 +217,25 @@
   }
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Safe-area padding helpers for iOS notch / home indicator */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Touch scroll momentum on iOS (belt-and-suspenders alongside -webkit-overflow-scrolling) */
+  .scroll-touch {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 }

@@ -36,7 +36,7 @@ export function MessageBubble({ message, userName }: MessageBubbleProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "group flex gap-4 py-5",
+        "group flex gap-3 py-3 md:gap-4 md:py-5",
         isUser ? "flex-row-reverse" : "flex-row",
       )}
     >
@@ -74,7 +74,7 @@ export function MessageBubble({ message, userName }: MessageBubbleProps) {
             className={cn(
               "max-w-2xl",
               isUser
-                ? "rounded-2xl rounded-tr-md bg-secondary/60 border border-border/60 px-4 py-2.5 text-[15px] leading-relaxed"
+                ? "rounded-2xl rounded-tr-md bg-secondary/60 border border-border/60 px-3.5 py-2 md:px-4 md:py-2.5 text-[15px] leading-relaxed"
                 : "text-[15px] leading-relaxed text-foreground/90",
             )}
           >
