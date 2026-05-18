@@ -17,6 +17,9 @@ import {
   MessageSquare,
   MoreVertical,
   ChevronRight,
+  Trash2,
+  Pencil,
+  Check,
 } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
 import { useChatStore } from "@/store/chat-store";
@@ -176,6 +179,8 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
   const activeId = useChatStore((s) => s.activeId);
   const newConversation = useChatStore((s) => s.newConversation);
   const setActive = useChatStore((s) => s.setActive);
+  const deleteConversation = useChatStore((s) => s.deleteConversation);
+  const renameConversation = useChatStore((s) => s.renameConversation);
 
   // Auth store
   const user = useAuthStore((s) => s.user);
@@ -238,6 +243,23 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
   };
 
   const closeSidebar = () => setMobileSidebarOpen(false);
+
+  const [menuOpenId, setMenuOpenId] = React.useState<string | null>(null);
+  const [renamingId, setRenamingId] = React.useState<string | null>(null);
+  const [renameValue, setRenameValue] = React.useState("");
+
+  const saveRename = (id: string) => {
+    if (renameValue.trim()) renameConversation(id, renameValue.trim());
+    setRenamingId(null);
+    setMenuOpenId(null);
+  };
+
+  React.useEffect(() => {
+    if (!menuOpenId) return;
+    const handler = () => setMenuOpenId(null);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [menuOpenId]);
 
   return (
     <div
@@ -438,48 +460,239 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
                 No conversations yet
               </li>
             ) : (
-              conversations.slice(0, 12).map((c) => {
-                const isActive = c.id === activeId;
-                return (
-                  <li key={c.id}>
-                    <Link
-                      href="/chat"
-                      onClick={() => {
-                        setActive(c.id);
-                        closeSidebar();
-                      }}
-                      className="block w-full rounded-md px-3 py-2 text-left transition-colors min-h-[44px]"
-                      style={{
-                        background: isActive
-                          ? "rgba(255,255,255,0.08)"
-                          : "transparent",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isActive)
-                          e.currentTarget.style.background =
-                            "rgba(255,255,255,0.05)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = isActive
-                          ? "rgba(255,255,255,0.08)"
-                          : "transparent";
-                      }}
+              <AnimatePresence initial={false}>
+                {conversations.slice(0, 12).map((c) => {
+                  const isActive = c.id === activeId;
+                  const menuOpen = menuOpenId === c.id;
+                  const isRenaming = renamingId === c.id;
+                  return (
+                    <motion.li
+                      key={c.id}
+                      layout
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
                     >
                       <div
-                        className="text-sm font-medium truncate"
+                        className="rounded-md"
                         style={{
-                          color: isActive ? "#ffffff" : "rgba(255,255,255,0.7)",
+                          background:
+                            isActive || menuOpen
+                              ? "rgba(255,255,255,0.08)"
+                              : "transparent",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isActive && !menuOpen)
+                            e.currentTarget.style.background =
+                              "rgba(255,255,255,0.05)";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isActive && !menuOpen)
+                            e.currentTarget.style.background = "transparent";
                         }}
                       >
-                        {c.title}
+                        {/* Row: link + three-dot */}
+                        <div className="flex items-center group">
+                          <Link
+                            href="/chat"
+                            onClick={() => {
+                              setActive(c.id);
+                              closeSidebar();
+                              setMenuOpenId(null);
+                            }}
+                            className="flex-1 min-w-0 px-3 py-2 min-h-[40px] flex flex-col justify-center"
+                          >
+                            <div
+                              className="text-sm font-medium truncate"
+                              style={{
+                                color: isActive
+                                  ? "#ffffff"
+                                  : "rgba(255,255,255,0.7)",
+                              }}
+                            >
+                              {c.title}
+                            </div>
+                            <div
+                              className="font-mono text-[10px] mt-0.5"
+                              style={{ color: "rgba(255,255,255,0.3)" }}
+                            >
+                              {timeAgo(c.updatedAt)}
+                            </div>
+                          </Link>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuOpenId(menuOpen ? null : c.id);
+                              setRenamingId(null);
+                            }}
+                            className={cn(
+                              "shrink-0 grid place-items-center size-7 rounded-md mr-1.5 transition-all duration-150",
+                              menuOpen
+                                ? "opacity-100"
+                                : "opacity-50 md:opacity-0 md:group-hover:opacity-100",
+                            )}
+                            style={{
+                              color: menuOpen
+                                ? "#d4a574"
+                                : "rgba(255,255,255,0.6)",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background =
+                                "rgba(255,255,255,0.1)";
+                              if (!menuOpen)
+                                e.currentTarget.style.color = "#ffffff";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "transparent";
+                              e.currentTarget.style.color = menuOpen
+                                ? "#d4a574"
+                                : "rgba(255,255,255,0.6)";
+                            }}
+                            aria-label="Conversation options"
+                          >
+                            <MoreVertical size={12} />
+                          </button>
+                        </div>
+
+                        {/* Expandable actions */}
+                        <AnimatePresence>
+                          {menuOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.15 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="px-2 pb-2">
+                                {isRenaming ? (
+                                  <div
+                                    className="flex items-center gap-1.5 rounded-lg px-2 py-1.5"
+                                    style={{
+                                      background: "rgba(255,255,255,0.05)",
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <input
+                                      autoFocus
+                                      value={renameValue}
+                                      onChange={(e) =>
+                                        setRenameValue(e.target.value)
+                                      }
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter")
+                                          saveRename(c.id);
+                                        if (e.key === "Escape") {
+                                          setRenamingId(null);
+                                          setMenuOpenId(null);
+                                        }
+                                      }}
+                                      onBlur={() => saveRename(c.id)}
+                                      className="flex-1 min-w-0 bg-transparent text-xs text-white outline-none"
+                                      style={{
+                                        borderBottom:
+                                          "1px solid rgba(212,165,116,0.5)",
+                                        paddingBottom: "2px",
+                                      }}
+                                    />
+                                    <button
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        saveRename(c.id);
+                                      }}
+                                      className="grid place-items-center size-5 rounded shrink-0"
+                                      style={{ color: "#d4a574" }}
+                                      aria-label="Save rename"
+                                    >
+                                      <Check size={11} />
+                                    </button>
+                                    <button
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        setRenamingId(null);
+                                        setMenuOpenId(null);
+                                      }}
+                                      className="grid place-items-center size-5 rounded shrink-0"
+                                      style={{
+                                        color: "rgba(255,255,255,0.4)",
+                                      }}
+                                      aria-label="Cancel rename"
+                                    >
+                                      <X size={11} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div
+                                    className="flex gap-1.5"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <button
+                                      onClick={() => {
+                                        setRenameValue(c.title);
+                                        setRenamingId(c.id);
+                                      }}
+                                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs transition-colors"
+                                      style={{
+                                        color: "rgba(255,255,255,0.65)",
+                                        background: "rgba(255,255,255,0.06)",
+                                        border:
+                                          "1px solid rgba(255,255,255,0.08)",
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = "#ffffff";
+                                        e.currentTarget.style.background =
+                                          "rgba(255,255,255,0.1)";
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.color =
+                                          "rgba(255,255,255,0.65)";
+                                        e.currentTarget.style.background =
+                                          "rgba(255,255,255,0.06)";
+                                      }}
+                                    >
+                                      <Pencil size={11} />
+                                      Rename
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        deleteConversation(c.id);
+                                        setMenuOpenId(null);
+                                      }}
+                                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs transition-colors"
+                                      style={{
+                                        color: "rgba(239,68,68,0.75)",
+                                        background: "rgba(239,68,68,0.06)",
+                                        border:
+                                          "1px solid rgba(239,68,68,0.12)",
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = "#ef4444";
+                                        e.currentTarget.style.background =
+                                          "rgba(239,68,68,0.14)";
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.color =
+                                          "rgba(239,68,68,0.75)";
+                                        e.currentTarget.style.background =
+                                          "rgba(239,68,68,0.06)";
+                                      }}
+                                    >
+                                      <Trash2 size={11} />
+                                      Delete
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
-                      <div className="font-mono text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
-                        {timeAgo(c.updatedAt)}
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })
+                    </motion.li>
+                  );
+                })}
+              </AnimatePresence>
             )}
           </ul>
         </div>
