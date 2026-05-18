@@ -245,21 +245,38 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
   const closeSidebar = () => setMobileSidebarOpen(false);
 
   const [menuOpenId, setMenuOpenId] = React.useState<string | null>(null);
-  const [renamingId, setRenamingId] = React.useState<string | null>(null);
-  const [renameValue, setRenameValue] = React.useState("");
+  // Decoupled editing state — survives menu open/close and outside clicks
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = React.useState("");
+  const renameInputRef = React.useRef<HTMLInputElement>(null);
 
-  const saveRename = (id: string) => {
-    if (renameValue.trim()) renameConversation(id, renameValue.trim());
-    setRenamingId(null);
-    setMenuOpenId(null);
+  const commitRename = (id: string) => {
+    const trimmed = editingTitle.trim();
+    if (trimmed) renameConversation(id, trimmed);
+    setEditingId(null);
+    setEditingTitle("");
   };
 
+  const cancelRename = () => {
+    setEditingId(null);
+    setEditingTitle("");
+  };
+
+  // Focus the input reliably on iOS/Android after it mounts
   React.useEffect(() => {
-    if (!menuOpenId) return;
+    if (editingId === null) return;
+    const t = setTimeout(() => renameInputRef.current?.focus(), 50);
+    return () => clearTimeout(t);
+  }, [editingId]);
+
+  // Outside-click closes menu — suppressed entirely while editing to prevent
+  // mobile keyboard/focus events from collapsing the rename input
+  React.useEffect(() => {
+    if (!menuOpenId || editingId !== null) return;
     const handler = () => setMenuOpenId(null);
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
-  }, [menuOpenId]);
+  }, [menuOpenId, editingId]);
 
   return (
     <div
@@ -464,7 +481,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
                 {conversations.slice(0, 12).map((c) => {
                   const isActive = c.id === activeId;
                   const menuOpen = menuOpenId === c.id;
-                  const isRenaming = renamingId === c.id;
+                  const isEditing = editingId === c.id;
                   return (
                     <motion.li
                       key={c.id}
@@ -479,21 +496,21 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
                         className="rounded-md"
                         style={{
                           background:
-                            isActive || menuOpen
+                            isActive || menuOpen || isEditing
                               ? "rgba(255,255,255,0.08)"
                               : "transparent",
                         }}
                         onMouseEnter={(e) => {
-                          if (!isActive && !menuOpen)
+                          if (!isActive && !menuOpen && !isEditing)
                             e.currentTarget.style.background =
                               "rgba(255,255,255,0.05)";
                         }}
                         onMouseLeave={(e) => {
-                          if (!isActive && !menuOpen)
+                          if (!isActive && !menuOpen && !isEditing)
                             e.currentTarget.style.background = "transparent";
                         }}
                       >
-                        {/* Row: link + three-dot */}
+                        {/* Title row */}
                         <div className="flex items-center group">
                           <Link
                             href="/chat"
@@ -501,6 +518,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
                               setActive(c.id);
                               closeSidebar();
                               setMenuOpenId(null);
+                              if (editingId !== null) cancelRename();
                             }}
                             className="flex-1 min-w-0 px-3 py-2 min-h-[40px] flex flex-col justify-center"
                           >
@@ -524,31 +542,33 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              if (editingId !== null) cancelRename();
                               setMenuOpenId(menuOpen ? null : c.id);
-                              setRenamingId(null);
                             }}
                             className={cn(
                               "shrink-0 grid place-items-center size-7 rounded-md mr-1.5 transition-all duration-150",
-                              menuOpen
+                              menuOpen || isEditing
                                 ? "opacity-100"
                                 : "opacity-50 md:opacity-0 md:group-hover:opacity-100",
                             )}
                             style={{
-                              color: menuOpen
-                                ? "#d4a574"
-                                : "rgba(255,255,255,0.6)",
+                              color:
+                                menuOpen || isEditing
+                                  ? "#d4a574"
+                                  : "rgba(255,255,255,0.6)",
                             }}
                             onMouseEnter={(e) => {
                               e.currentTarget.style.background =
                                 "rgba(255,255,255,0.1)";
-                              if (!menuOpen)
+                              if (!menuOpen && !isEditing)
                                 e.currentTarget.style.color = "#ffffff";
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.background = "transparent";
-                              e.currentTarget.style.color = menuOpen
-                                ? "#d4a574"
-                                : "rgba(255,255,255,0.6)";
+                              e.currentTarget.style.color =
+                                menuOpen || isEditing
+                                  ? "#d4a574"
+                                  : "rgba(255,255,255,0.6)";
                             }}
                             aria-label="Conversation options"
                           >
@@ -556,9 +576,66 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
                           </button>
                         </div>
 
-                        {/* Expandable actions */}
+                        {/* Rename input — outside animation wrapper so mobile keyboard
+                            open/close and outside clicks never destroy the mounted input.
+                            No onBlur handler: save/cancel are explicit actions only. */}
+                        {isEditing && (
+                          <div
+                            className="px-2 pb-2"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div
+                              className="flex items-center gap-1 rounded-lg px-2 py-1"
+                              style={{ background: "rgba(255,255,255,0.05)" }}
+                            >
+                              <input
+                                ref={renameInputRef}
+                                value={editingTitle}
+                                onChange={(e) =>
+                                  setEditingTitle(e.target.value)
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    commitRename(c.id);
+                                  }
+                                  if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    cancelRename();
+                                  }
+                                }}
+                                className="flex-1 min-w-0 bg-transparent text-xs text-white outline-none"
+                                style={{
+                                  borderBottom:
+                                    "1px solid rgba(212,165,116,0.5)",
+                                  paddingBottom: "2px",
+                                }}
+                                aria-label="Rename conversation"
+                              />
+                              <button
+                                onClick={() => commitRename(c.id)}
+                                className="grid place-items-center min-h-[44px] min-w-[44px] rounded shrink-0"
+                                style={{ color: "#d4a574" }}
+                                aria-label="Save rename"
+                              >
+                                <Check size={14} />
+                              </button>
+                              <button
+                                onClick={cancelRename}
+                                className="grid place-items-center min-h-[44px] min-w-[44px] rounded shrink-0"
+                                style={{ color: "rgba(255,255,255,0.4)" }}
+                                aria-label="Cancel rename"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action buttons — animated; hidden while editing this item
+                            so animation wrappers never remount the rename input */}
                         <AnimatePresence>
-                          {menuOpen && (
+                          {menuOpen && !isEditing && (
                             <motion.div
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: "auto" }}
@@ -566,124 +643,63 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
                               transition={{ duration: 0.15 }}
                               className="overflow-hidden"
                             >
-                              <div className="px-2 pb-2">
-                                {isRenaming ? (
-                                  <div
-                                    className="flex items-center gap-1.5 rounded-lg px-2 py-1.5"
-                                    style={{
-                                      background: "rgba(255,255,255,0.05)",
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <input
-                                      autoFocus
-                                      value={renameValue}
-                                      onChange={(e) =>
-                                        setRenameValue(e.target.value)
-                                      }
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter")
-                                          saveRename(c.id);
-                                        if (e.key === "Escape") {
-                                          setRenamingId(null);
-                                          setMenuOpenId(null);
-                                        }
-                                      }}
-                                      onBlur={() => saveRename(c.id)}
-                                      className="flex-1 min-w-0 bg-transparent text-xs text-white outline-none"
-                                      style={{
-                                        borderBottom:
-                                          "1px solid rgba(212,165,116,0.5)",
-                                        paddingBottom: "2px",
-                                      }}
-                                    />
-                                    <button
-                                      onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        saveRename(c.id);
-                                      }}
-                                      className="grid place-items-center size-5 rounded shrink-0"
-                                      style={{ color: "#d4a574" }}
-                                      aria-label="Save rename"
-                                    >
-                                      <Check size={11} />
-                                    </button>
-                                    <button
-                                      onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        setRenamingId(null);
-                                        setMenuOpenId(null);
-                                      }}
-                                      className="grid place-items-center size-5 rounded shrink-0"
-                                      style={{
-                                        color: "rgba(255,255,255,0.4)",
-                                      }}
-                                      aria-label="Cancel rename"
-                                    >
-                                      <X size={11} />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div
-                                    className="flex gap-1.5"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <button
-                                      onClick={() => {
-                                        setRenameValue(c.title);
-                                        setRenamingId(c.id);
-                                      }}
-                                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs transition-colors"
-                                      style={{
-                                        color: "rgba(255,255,255,0.65)",
-                                        background: "rgba(255,255,255,0.06)",
-                                        border:
-                                          "1px solid rgba(255,255,255,0.08)",
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.color = "#ffffff";
-                                        e.currentTarget.style.background =
-                                          "rgba(255,255,255,0.1)";
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.color =
-                                          "rgba(255,255,255,0.65)";
-                                        e.currentTarget.style.background =
-                                          "rgba(255,255,255,0.06)";
-                                      }}
-                                    >
-                                      <Pencil size={11} />
-                                      Rename
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        deleteConversation(c.id);
-                                        setMenuOpenId(null);
-                                      }}
-                                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs transition-colors"
-                                      style={{
-                                        color: "rgba(239,68,68,0.75)",
-                                        background: "rgba(239,68,68,0.06)",
-                                        border:
-                                          "1px solid rgba(239,68,68,0.12)",
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.color = "#ef4444";
-                                        e.currentTarget.style.background =
-                                          "rgba(239,68,68,0.14)";
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.color =
-                                          "rgba(239,68,68,0.75)";
-                                        e.currentTarget.style.background =
-                                          "rgba(239,68,68,0.06)";
-                                      }}
-                                    >
-                                      <Trash2 size={11} />
-                                      Delete
-                                    </button>
-                                  </div>
-                                )}
+                              <div
+                                className="px-2 pb-2 flex gap-1.5"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  onClick={() => {
+                                    setEditingTitle(c.title);
+                                    setEditingId(c.id);
+                                    setMenuOpenId(null);
+                                  }}
+                                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs transition-colors min-h-[44px]"
+                                  style={{
+                                    color: "rgba(255,255,255,0.65)",
+                                    background: "rgba(255,255,255,0.06)",
+                                    border: "1px solid rgba(255,255,255,0.08)",
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = "#ffffff";
+                                    e.currentTarget.style.background =
+                                      "rgba(255,255,255,0.1)";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.color =
+                                      "rgba(255,255,255,0.65)";
+                                    e.currentTarget.style.background =
+                                      "rgba(255,255,255,0.06)";
+                                  }}
+                                >
+                                  <Pencil size={11} />
+                                  Rename
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    deleteConversation(c.id);
+                                    setMenuOpenId(null);
+                                  }}
+                                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs transition-colors min-h-[44px]"
+                                  style={{
+                                    color: "rgba(239,68,68,0.75)",
+                                    background: "rgba(239,68,68,0.06)",
+                                    border: "1px solid rgba(239,68,68,0.12)",
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = "#ef4444";
+                                    e.currentTarget.style.background =
+                                      "rgba(239,68,68,0.14)";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.color =
+                                      "rgba(239,68,68,0.75)";
+                                    e.currentTarget.style.background =
+                                      "rgba(239,68,68,0.06)";
+                                  }}
+                                >
+                                  <Trash2 size={11} />
+                                  Delete
+                                </button>
                               </div>
                             </motion.div>
                           )}
