@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu,
@@ -182,6 +182,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
 
   // Routing
   const pathname = usePathname();
+  const router = useRouter();
 
   // Standalone demo state
   const [demoMessages, setDemoMessages] = React.useState<DemoMessage[]>(DEMO_MESSAGES);
@@ -409,6 +410,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
             onClick={() => {
               newConversation();
               closeSidebar();
+              if (pathname !== "/chat") router.push("/chat");
             }}
             className="grid place-items-center size-6 rounded-md transition-colors"
             style={{ color: "rgba(255,255,255,0.5)" }}
@@ -491,6 +493,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
             onClick={() => {
               newConversation();
               closeSidebar();
+              if (pathname !== "/chat") router.push("/chat");
             }}
             className="flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors min-h-[44px]"
             style={{

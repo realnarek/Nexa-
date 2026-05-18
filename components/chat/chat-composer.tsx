@@ -8,14 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useChatStore } from "@/store/chat-store";
 import { cn } from "@/lib/utils";
 
-const QUICK_PROMPTS = [
-  "Summarize this thread",
-  "Draft a follow-up email",
-  "Plan my day",
-  "Research competitors",
-];
+interface ChatComposerProps {
+  autoFocus?: boolean;
+}
 
-export function ChatComposer() {
+export function ChatComposer({ autoFocus }: ChatComposerProps) {
   const [value, setValue] = React.useState("");
   const sendMessage = useChatStore((s) => s.sendMessage);
   const status = useChatStore((s) => s.status);
@@ -31,15 +28,20 @@ export function ChatComposer() {
     el.style.height = Math.min(el.scrollHeight, 200) + "px";
   }, [value]);
 
-  // Hydrate from onboarding seed prompt if any
+  // Focus input on new empty chats (autoFocus) or when a seed prompt is set
   React.useEffect(() => {
     if (typeof window === "undefined") return;
     const seed = sessionStorage.getItem("nexa.seed-prompt");
     if (seed) {
       sessionStorage.removeItem("nexa.seed-prompt");
       setValue(seed);
-      textareaRef.current?.focus();
     }
+    if (autoFocus || seed) {
+      // Small delay so the DOM is fully painted before focusing (important on mobile)
+      const t = setTimeout(() => textareaRef.current?.focus(), 80);
+      return () => clearTimeout(t);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const submit = async () => {
@@ -115,20 +117,6 @@ export function ChatComposer() {
             </div>
           </div>
         </motion.div>
-
-        {!busy && (
-          <div className="flex flex-wrap gap-1.5 mt-2.5 justify-center">
-            {QUICK_PROMPTS.map((p) => (
-              <button
-                key={p}
-                onClick={() => setValue(p)}
-                className="rounded-full border border-border bg-card/40 px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-        )}
 
         {busy && (
           <div className="flex items-center justify-center gap-2 mt-3 font-mono text-[11px] text-muted-foreground">
