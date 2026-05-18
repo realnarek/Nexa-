@@ -240,7 +240,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
 
   return (
     <div
-      className="flex h-screen w-full overflow-hidden"
+      className="flex h-dvh w-full overflow-hidden"
       style={{ background: "#0a0e27", color: "#ffffff" }}
     >
       {/* ── Mobile overlay ── */}
@@ -251,8 +251,8 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="fixed inset-0 z-30 bg-black/50 md:hidden"
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="fixed inset-0 z-30 bg-black/60 backdrop-blur-[2px] md:hidden"
             onClick={closeSidebar}
             aria-hidden
           />
@@ -262,15 +262,20 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
       {/* ── Sidebar ── */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-full flex-col",
-          "transition-transform duration-300",
-          "md:relative md:z-auto md:w-[280px] md:shrink-0 md:translate-x-0 md:flex",
+          "fixed inset-y-0 left-0 z-40 flex flex-col",
+          "w-[280px] max-w-[85vw]",
+          "transition-transform duration-250",
+          "md:relative md:z-auto md:w-[280px] md:max-w-none md:shrink-0 md:translate-x-0 md:flex",
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         )}
         style={{
           background: "#0f1419",
           borderRight: "1px solid rgba(255,255,255,0.08)",
-          transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+          transitionProperty: "transform",
+          transitionDuration: "250ms",
+          transitionTimingFunction: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+          willChange: "transform",
+          boxShadow: "4px 0 32px rgba(0,0,0,0.55)",
         }}
       >
         {/* Header */}
@@ -634,10 +639,10 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
 
             {/* ── Messages ── */}
             <div
-              className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin"
-              style={{ scrollBehavior: "smooth" }}
+              className="flex-1 overflow-y-auto px-3 py-4 space-y-4 scrollbar-thin overscroll-contain"
+              style={{ scrollBehavior: "smooth", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
             >
-              <div className="max-w-2xl mx-auto w-full space-y-6">
+              <div className="max-w-2xl mx-auto w-full space-y-4">
                 {demoMessages.map((msg) => (
                   <DemoMessageBubble key={msg.id} msg={msg} />
                 ))}
@@ -647,15 +652,16 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
 
             {/* ── Input ── */}
             <div
-              className="shrink-0 px-4 py-4"
+              className="shrink-0 px-3 pt-3"
               style={{
                 background: "linear-gradient(to top, #0a0e27 80%, transparent)",
                 borderTop: "1px solid rgba(255,255,255,0.06)",
+                paddingBottom: "max(12px, env(safe-area-inset-bottom))",
               }}
             >
               <div className="max-w-2xl mx-auto w-full">
                 <div
-                  className="flex items-center gap-3 rounded-2xl px-4 py-1"
+                  className="flex items-center gap-2.5 rounded-2xl px-3 py-1"
                   style={{
                     background: "#111827",
                     border: "1px solid rgba(255,255,255,0.12)",
@@ -668,12 +674,12 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Ask Nexa anything..."
-                    className="flex-1 bg-transparent py-3 text-sm text-white placeholder-[rgba(255,255,255,0.35)] outline-none min-h-[48px]"
+                    className="flex-1 bg-transparent py-2.5 text-sm text-white placeholder-[rgba(255,255,255,0.35)] outline-none min-h-[44px]"
                   />
                   <button
                     onClick={sendDemoMessage}
                     disabled={!inputValue.trim()}
-                    className="grid place-items-center size-9 rounded-xl shrink-0 transition-all duration-150"
+                    className="grid place-items-center size-8 rounded-xl shrink-0 transition-all duration-150"
                     style={{
                       background: inputValue.trim()
                         ? "#d4a574"
@@ -685,11 +691,11 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
                     }}
                     aria-label="Send message"
                   >
-                    <ArrowUp size={16} />
+                    <ArrowUp size={15} />
                   </button>
                 </div>
                 <p
-                  className="text-center text-[10px] font-mono mt-2"
+                  className="text-center text-[10px] font-mono mt-1.5"
                   style={{ color: "rgba(255,255,255,0.2)" }}
                 >
                   Nexa Agent · v0.1 — press Enter to send

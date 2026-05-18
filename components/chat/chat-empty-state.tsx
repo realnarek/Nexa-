@@ -33,17 +33,17 @@ interface EmptyStateProps {
 
 export function ChatEmptyState({ onPick }: EmptyStateProps) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 md:py-12 text-center">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="max-w-xl space-y-8"
+        className="w-full max-w-xl space-y-6 md:space-y-8"
       >
-        <div className="flex justify-center mb-2">
+        <div className="flex justify-center mb-1">
           <Logo size="lg" showWordmark={false} />
         </div>
-        <h2 className="display-serif italic text-4xl tracking-tight">
+        <h2 className="display-serif italic text-3xl md:text-4xl tracking-tight">
           What should I do for you?
         </h2>
         <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
@@ -51,7 +51,7 @@ export function ChatEmptyState({ onPick }: EmptyStateProps) {
           execute, and show you every step.
         </p>
 
-        <div className="grid sm:grid-cols-2 gap-2 pt-4">
+        <div className="grid sm:grid-cols-2 gap-2 pt-2 md:pt-4">
           {SUGGESTIONS.map((s, i) => {
             const Icon = s.icon;
             return (
@@ -61,7 +61,7 @@ export function ChatEmptyState({ onPick }: EmptyStateProps) {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + i * 0.06 }}
-                className="surface text-left p-4 rounded-lg hover:border-primary/30 transition-colors group"
+                className="surface text-left p-3 md:p-4 rounded-lg hover:border-primary/30 transition-colors group"
               >
                 <div className="flex items-start gap-3">
                   <div className="grid place-items-center size-8 rounded-md border border-border bg-card/40 shrink-0 text-foreground/70 group-hover:text-primary transition-colors">

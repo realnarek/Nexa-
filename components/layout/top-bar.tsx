@@ -29,15 +29,21 @@ export function TopBar({ title, subtitle, right }: TopBarProps) {
   const busy = status === "thinking" || status === "executing" || status === "streaming";
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-border bg-background/70 backdrop-blur-xl px-4 md:px-6">
+    <header
+      className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/80 backdrop-blur-xl px-3 md:px-6"
+      style={{
+        minHeight: "3.5rem",
+        paddingTop: "max(0px, env(safe-area-inset-top))",
+      }}
+    >
       <button
         onClick={() => setMobileSidebarOpen(true)}
-        className="md:hidden grid place-items-center size-10 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        className="md:hidden grid place-items-center size-9 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors shrink-0"
         aria-label="Open sidebar"
       >
         <Menu className="size-5" />
       </button>
-      <div className="flex flex-col gap-0.5 min-w-0">
+      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
         <h1 className="text-sm font-medium leading-none truncate">{title}</h1>
         {subtitle && (
           <p className="text-[11px] text-muted-foreground truncate">{subtitle}</p>
