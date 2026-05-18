@@ -249,17 +249,55 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
   const [renameValue, setRenameValue] = React.useState("");
 
   const saveRename = (id: string) => {
-    if (renameValue.trim()) renameConversation(id, renameValue.trim());
+    // Guard against undefined renameValue from legacy conversations with missing title
+    const trimmed = (renameValue ?? "").trim();
+    if (trimmed) renameConversation(id, trimmed);
     setRenamingId(null);
     setMenuOpenId(null);
   };
 
+  // Outside-click handler: must clear both menuOpenId AND renamingId so the
+  // rename input doesn't reappear stale on the next open, and so the onBlur
+  // guard below correctly skips the spurious save triggered by AnimatePresence
+  // unmounting the focused input.
   React.useEffect(() => {
     if (!menuOpenId) return;
-    const handler = () => setMenuOpenId(null);
+    const handler = () => {
+      console.debug("[Nexa:rename] outside-click close", { menuOpenId, renamingId });
+      setMenuOpenId(null);
+      setRenamingId(null);
+    };
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
-  }, [menuOpenId]);
+  }, [menuOpenId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Diagnostic: log rename/menu state changes so production divergence is visible
+  React.useEffect(() => {
+    if (menuOpenId !== null || renamingId !== null) {
+      console.debug("[Nexa:rename] state", {
+        menuOpenId,
+        renamingId,
+        renameValue,
+        activeConversationId: activeId,
+        convCount: conversations.length,
+      });
+    }
+  }, [menuOpenId, renamingId, renameValue, activeId, conversations.length]);
+
+  // Diagnostic: log persisted conversation health on first render
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    console.debug("[Nexa:rename] mounted conversations", conversations.slice(0, 5).map((c) => ({
+      id: c.id,
+      title: c.title,
+      titleType: typeof c.title,
+      hasUpdatedAt: typeof c.updatedAt === "number",
+      updatedAt: c.updatedAt,
+      msgCount: c.messages?.length ?? 0,
+      stuckStreaming: c.messages?.some?.((m) => m.streaming) ?? false,
+    })));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally mount-only
 
   return (
     <div
@@ -577,7 +615,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
                                   >
                                     <input
                                       autoFocus
-                                      value={renameValue}
+                                      value={renameValue ?? ""}
                                       onChange={(e) =>
                                         setRenameValue(e.target.value)
                                       }
@@ -589,7 +627,14 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
                                           setMenuOpenId(null);
                                         }
                                       }}
-                                      onBlur={() => saveRename(c.id)}
+                                      onBlur={() => {
+                                        // Only save if we are still the active rename target.
+                                        // renamingId is null by the time AnimatePresence unmounts
+                                        // the input after a cancel/outside-click, so this guard
+                                        // prevents the spurious save that was corrupting titles
+                                        // on production (where conversations are persisted).
+                                        if (renamingId === c.id) saveRename(c.id);
+                                      }}
                                       className="flex-1 min-w-0 bg-transparent text-xs text-white outline-none"
                                       style={{
                                         borderBottom:
@@ -630,7 +675,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
                                   >
                                     <button
                                       onClick={() => {
-                                        setRenameValue(c.title);
+                                        setRenameValue(c.title ?? "");
                                         setRenamingId(c.id);
                                       }}
                                       className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs transition-colors"

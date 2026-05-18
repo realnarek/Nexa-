@@ -283,11 +283,51 @@ export const useChatStore = create<ChatState>()(
     }),
     {
       name: "nexa-chat",
+      version: 1,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({
         conversations: s.conversations,
         activeId: s.activeId,
       }),
+      migrate: (raw, fromVersion) => {
+        const s = raw as { conversations?: Record<string, unknown>[]; activeId?: string | null };
+        if (fromVersion < 1) {
+          const now = Date.now();
+          s.conversations = ((s.conversations ?? []) as Record<string, unknown>[]).map((c) => ({
+            ...c,
+            // Normalise missing/blank titles from legacy data
+            title: typeof c.title === "string" && (c.title as string).trim()
+              ? c.title
+              : "Untitled conversation",
+            // Normalise missing updatedAt — prevents timeAgo("Invalid Date")
+            updatedAt: typeof c.updatedAt === "number" && isFinite(c.updatedAt as number)
+              ? c.updatedAt
+              : (typeof c.createdAt === "number" ? c.createdAt : now),
+            createdAt: typeof c.createdAt === "number" && isFinite(c.createdAt as number)
+              ? c.createdAt
+              : now,
+            // Clear streaming:true frozen on messages from interrupted sessions
+            messages: (Array.isArray(c.messages) ? c.messages as Record<string, unknown>[] : [])
+              .map((m) => ({ ...m, streaming: false })),
+          }));
+        }
+        return s as unknown as ChatState;
+      },
+      onRehydrateStorage: () => (state) => {
+        if (typeof window === "undefined") return;
+        console.debug("[Nexa:chat] hydrated", {
+          convCount: state?.conversations?.length ?? 0,
+          activeId: state?.activeId,
+          sample: state?.conversations?.slice(0, 3).map((c) => ({
+            id: c.id,
+            title: c.title,
+            titleType: typeof c.title,
+            hasUpdatedAt: typeof c.updatedAt === "number",
+            msgCount: c.messages?.length ?? 0,
+            stuckStreaming: c.messages?.some?.((m) => m.streaming) ?? false,
+          })),
+        });
+      },
     },
   ),
 );

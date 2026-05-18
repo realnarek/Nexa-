@@ -7,6 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 /** Format a timestamp as a short relative string. */
 export function timeAgo(ts: number): string {
+  if (!ts || !isFinite(ts)) return "—";
   const diff = Date.now() - ts;
   const s = Math.floor(diff / 1000);
   if (s < 5) return "just now";
