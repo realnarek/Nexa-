@@ -33,37 +33,41 @@ const STEPS = [
   },
 ];
 
-const PROMPTS = [
-  "Plan my day around three priorities",
-  "Find the top 3 AI agent platforms launched in 2026",
-  "Draft a warm reply to the recruiter follow-up",
-  "Generate 5 startup ideas in the climate space",
-];
-
 export default function OnboardingPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const continueAsGuest = useAuthStore((s) => s.continueAsGuest);
+  const [leaving, setLeaving] = React.useState(false);
 
   React.useEffect(() => {
-    // If somehow not authenticated, start guest session so the demo always works
     if (!user) continueAsGuest();
   }, [user, continueAsGuest]);
 
+  const handleEnter = React.useCallback(() => {
+    setLeaving(true);
+    setTimeout(() => router.push("/chat"), 280);
+  }, [router]);
+
   return (
-    <main className="relative min-h-screen px-6 py-16">
+    <main className="relative min-h-dvh flex flex-col items-center justify-center px-5 py-8 overflow-hidden">
+      {/* Backdrop */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-grid opacity-40" />
-        <div className="absolute inset-x-0 top-0 h-[600px] bg-[radial-gradient(ellipse_at_top,hsl(28_100%_50%/0.08),transparent_60%)]" />
+        <div className="absolute inset-x-0 top-0 h-[400px] bg-[radial-gradient(ellipse_at_top,hsl(28_100%_50%/0.08),transparent_60%)]" />
       </div>
 
-      <div className="max-w-2xl mx-auto space-y-12">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="text-center space-y-6"
-        >
+      <motion.div
+        animate={
+          leaving
+            ? { opacity: 0, y: -12, scale: 0.97 }
+            : { opacity: 1, y: 0, scale: 1 }
+        }
+        initial={{ opacity: 0, y: 10 }}
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full max-w-sm space-y-5"
+      >
+        {/* Header */}
+        <div className="text-center space-y-3">
           <div className="flex justify-center">
             <Logo size="lg" />
           </div>
@@ -71,13 +75,14 @@ export default function OnboardingPage() {
             <Sparkles className="size-3 text-primary" />
             Welcome{user?.name ? `, ${user.name}` : ""}
           </Badge>
-          <h1 className="text-balance text-3xl md:text-4xl tracking-tight">
+          <h1 className="text-balance text-2xl tracking-tight">
             Three things to know before you{" "}
             <span className="display-serif italic text-primary">begin</span>.
           </h1>
-        </motion.div>
+        </div>
 
-        <div className="space-y-3">
+        {/* Steps */}
+        <div className="space-y-2">
           {STEPS.map((step, i) => {
             const Icon = step.icon;
             return (
@@ -85,20 +90,20 @@ export default function OnboardingPage() {
                 key={step.title}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.15 + i * 0.1, duration: 0.4 }}
-                className="surface flex items-start gap-4 p-5 rounded-xl"
+                transition={{ delay: 0.12 + i * 0.09, duration: 0.35 }}
+                className="surface flex items-start gap-3 p-3.5 rounded-xl"
               >
-                <div className="grid place-items-center size-10 rounded-md border border-border bg-background/40 text-primary shrink-0">
-                  <Icon className="size-4" />
+                <div className="grid place-items-center size-8 rounded-md border border-border bg-background/40 text-primary shrink-0">
+                  <Icon className="size-3.5" />
                 </div>
                 <div>
-                  <div className="font-medium mb-1">
+                  <div className="font-medium text-sm mb-0.5">
                     <span className="font-mono text-[10px] text-muted-foreground mr-2">
                       0{i + 1}
                     </span>
                     {step.title}
                   </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     {step.body}
                   </p>
                 </div>
@@ -107,37 +112,21 @@ export default function OnboardingPage() {
           })}
         </div>
 
+        {/* CTA */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.4 }}
-          className="space-y-3"
+          transition={{ delay: 0.42, duration: 0.35 }}
+          className="flex flex-col items-center gap-2 pt-1"
         >
-          <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground text-center">
-            Try one of these
-          </div>
-          <div className="grid sm:grid-cols-2 gap-2">
-            {PROMPTS.map((p) => (
-              <button
-                key={p}
-                onClick={() => {
-                  sessionStorage.setItem("nexa.seed-prompt", p);
-                  router.push("/chat");
-                }}
-                className="surface text-left p-3 rounded-lg hover:border-primary/30 transition-colors text-sm"
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-        </motion.div>
-
-        <div className="flex justify-center pt-4">
-          <Button size="lg" onClick={() => router.push("/chat")}>
-            Open workspace <ArrowRight className="size-4" />
+          <Button size="lg" className="w-full" onClick={handleEnter}>
+            Enter workspace <ArrowRight className="size-4" />
           </Button>
-        </div>
-      </div>
+          <p className="text-[11px] text-muted-foreground text-center font-mono">
+            You can revisit this later in Settings.
+          </p>
+        </motion.div>
+      </motion.div>
     </main>
   );
 }
