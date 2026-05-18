@@ -1,4 +1,4 @@
-import { Sidebar } from "@/components/layout/sidebar";
+import { NexaChatUI } from "@/components/chat/nexa-chat-ui";
 import { CommandPalette } from "@/components/layout/command-palette";
 import { AuthGate } from "@/components/common/auth-gate";
 
@@ -9,11 +9,8 @@ export default function DashboardLayout({
 }) {
   return (
     <AuthGate>
-      <div className="flex h-screen w-full overflow-hidden bg-background">
-        <Sidebar />
-        <div className="flex-1 flex flex-col min-w-0">{children}</div>
-        <CommandPalette />
-      </div>
+      <NexaChatUI>{children}</NexaChatUI>
+      <CommandPalette />
     </AuthGate>
   );
 }

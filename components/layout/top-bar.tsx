@@ -3,7 +3,7 @@
 import { useChatStore } from "@/store/chat-store";
 import { useUIStore } from "@/store/ui-store";
 import { cn } from "@/lib/utils";
-import { Cpu, Square } from "lucide-react";
+import { Cpu, Square, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const STATUS_COPY: Record<string, { label: string; color: string }> = {
@@ -24,11 +24,19 @@ export function TopBar({ title, subtitle, right }: TopBarProps) {
   const status = useChatStore((s) => s.status);
   const stop = useChatStore((s) => s.stopAgent);
   const setCommandOpen = useUIStore((s) => s.setCommandOpen);
+  const setMobileSidebarOpen = useUIStore((s) => s.setMobileSidebarOpen);
   const s = STATUS_COPY[status] ?? STATUS_COPY.idle;
   const busy = status === "thinking" || status === "executing" || status === "streaming";
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-border bg-background/70 backdrop-blur-xl px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-border bg-background/70 backdrop-blur-xl px-4 md:px-6">
+      <button
+        onClick={() => setMobileSidebarOpen(true)}
+        className="md:hidden grid place-items-center size-10 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        aria-label="Open sidebar"
+      >
+        <Menu className="size-5" />
+      </button>
       <div className="flex flex-col gap-0.5 min-w-0">
         <h1 className="text-sm font-medium leading-none truncate">{title}</h1>
         {subtitle && (
