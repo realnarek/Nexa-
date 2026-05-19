@@ -236,9 +236,7 @@ async function streamProviderTurn({
   if (!response.ok || !response.body) {
     const details = await serializeProviderResponse(response);
     console.error("[agent] OpenRouter request failed:", JSON.stringify(details));
-    throw new Error(
-      `Provider request failed (${details.status}): ${typeof details.body === "string" ? details.body.slice(0, 300) : response.statusText}`,
-    );
+    throw new Error(friendlyProviderError(details.status));
   }
 
   let assistantContent = "";
@@ -478,6 +476,14 @@ function readSseData(rawEvent: string) {
 function isProviderSafeMessage(message: ChatCompletionMessageParam) {
   const role = (message as { role?: string }).role;
   return role !== "system" && role !== "developer" && role !== "tool";
+}
+
+function friendlyProviderError(status: number): string {
+  if (status === 429) return "Daily request limit reached. Please try again later.";
+  if (status === 401 || status === 403) return "Authentication failed. Please check your API configuration.";
+  if (status === 503) return "The AI provider is temporarily unavailable. Please try again later.";
+  if (status >= 500) return "The AI provider encountered an error. Please try again.";
+  return "The AI provider is temporarily unavailable. Please try again later.";
 }
 
 async function serializeProviderResponse(response: Response) {

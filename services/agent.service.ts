@@ -95,9 +95,26 @@ export async function* runAgent(
 
     yield {
       type: "error",
-      error: err instanceof Error ? err.message : "Unknown error",
+      error: sanitizeErrorMessage(err instanceof Error ? err.message : "Unknown error"),
     };
   }
+}
+
+/**
+ * Last-resort guard: if a raw provider payload or oversized string somehow
+ * escapes earlier sanitization, replace it with a generic message so the UI
+ * never renders raw JSON in the chat.
+ */
+function sanitizeErrorMessage(message: string): string {
+  const trimmed = message.trimStart();
+  if (
+    message.length > 200 ||
+    trimmed.startsWith("{") ||
+    trimmed.startsWith("[")
+  ) {
+    return "Something went wrong. Please try again.";
+  }
+  return message;
 }
 
 async function readErrorMessage(response: Response) {
