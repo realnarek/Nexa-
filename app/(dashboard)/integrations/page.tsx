@@ -1,11 +1,11 @@
 "use client";
 
+import React from "react";
 import { motion } from "framer-motion";
-import { Plug, Check, Plus } from "lucide-react";
+import { Plug, Check, Zap, Settings2, Unplug } from "lucide-react";
 import * as Icons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { TopBar } from "@/components/layout/top-bar";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toolRegistry } from "@/services/tool-registry";
 import { cn } from "@/lib/utils";
@@ -15,19 +15,23 @@ function iconFor(name: string): LucideIcon {
   return I ?? Icons.Wrench;
 }
 
-const CATEGORY_COPY: Record<string, string> = {
-  search: "Information retrieval",
+const CATEGORY_LABELS: Record<string, string> = {
+  search: "Search",
   writing: "Composition",
   productivity: "Productivity",
   planning: "Scheduling",
   communication: "Communication",
 };
 
+const TOOL_DESCRIPTIONS: Record<string, string> = {
+  web_search:
+    "Search the live web for news, facts, research, and current information.",
+};
+
 export default function IntegrationsPage() {
   const tools = toolRegistry.list();
   const connectedCount = tools.filter((t) => t.connected).length;
 
-  // Group by category
   const grouped = tools.reduce<Record<string, typeof tools>>((acc, t) => {
     (acc[t.category] ??= []).push(t);
     return acc;
@@ -40,103 +44,81 @@ export default function IntegrationsPage() {
         subtitle={`${connectedCount} of ${tools.length} connected`}
       />
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
-        <div className="max-w-4xl mx-auto px-6 py-8 space-y-10">
-          <div className="surface-elevated rounded-xl p-6">
-            <div className="flex items-start gap-4">
-              <div className="grid place-items-center size-10 rounded-lg border border-border bg-card/40 text-primary shrink-0">
+      <div className="flex-1 overflow-y-auto scrollbar-thin scroll-touch">
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
+          <div className="surface-elevated rounded-xl p-5">
+            <div className="flex items-start gap-3">
+              <div className="grid place-items-center size-9 rounded-lg border border-border bg-card/40 text-primary shrink-0 mt-0.5">
                 <Plug className="size-4" />
               </div>
               <div className="flex-1">
-                <h2 className="font-medium mb-1">Tool registry</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Every capability the agent can invoke lives here. Each tool is
-                  a typed, modular contract — easy to swap from mock to
-                  production. Bring your own keys in{" "}
-                  <code className="font-mono text-xs bg-secondary px-1 py-0.5 rounded">
-                    .env.local
-                  </code>{" "}
-                  to flip a tool from demo to live.
+                <h2 className="font-semibold text-sm mb-1.5">
+                  Connected tools
+                </h2>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Connect services Nexa can use while working. Tools help the
+                  agent search, plan, retrieve information, and complete tasks
+                  for you.
                 </p>
               </div>
             </div>
           </div>
 
           {Object.entries(grouped).map(([category, items]) => (
-            <section key={category}>
-              <div className="flex items-baseline justify-between mb-3">
-                <h3 className="text-sm font-medium">
-                  {CATEGORY_COPY[category] ?? category}
-                </h3>
-                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {items.length} tool{items.length === 1 ? "" : "s"}
-                </span>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-3">
+            <section key={category} className="space-y-2">
+              <h3 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-1">
+                {CATEGORY_LABELS[category] ?? category}
+              </h3>
+              <div className="grid gap-2">
                 {items.map((t, i) => {
                   const Icon = iconFor(t.icon);
+                  const description = TOOL_DESCRIPTIONS[t.id] ?? t.description;
                   return (
                     <motion.div
                       key={t.id}
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.04, duration: 0.25 }}
-                      className={cn(
-                        "surface p-4 rounded-xl flex flex-col gap-3 hover:border-primary/30 transition-colors group",
-                      )}
+                      className="surface rounded-xl p-4 hover:border-primary/20 transition-colors"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="grid place-items-center size-10 rounded-md border border-border bg-card/40">
+                      <div className="flex items-center gap-3 mb-2.5">
+                        <div className="grid place-items-center size-9 rounded-lg border border-border bg-secondary/60 text-foreground shrink-0">
                           <Icon className="size-4" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{t.name}</span>
-                            {t.connected ? (
-                              <Badge variant="success" size="sm">
-                                <Check className="size-2.5" /> Connected
-                              </Badge>
-                            ) : (
-                              <Badge variant="muted" size="sm">
-                                Demo only
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                            {t.description}
-                          </p>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="font-medium text-sm leading-none">
+                            {t.name}
+                          </span>
+                          {t.connected ? (
+                            <Badge variant="success" size="sm">
+                              <Check className="size-2.5" /> Ready
+                            </Badge>
+                          ) : (
+                            <Badge variant="muted" size="sm">
+                              Not connected
+                            </Badge>
+                          )}
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {t.parameters.slice(0, 3).map((p) => (
-                          <span
-                            key={p.name}
-                            className="font-mono text-[10px] text-muted-foreground bg-secondary/40 border border-border/60 rounded px-1.5 py-0.5"
-                          >
-                            {p.name}
-                            {p.required && (
-                              <span className="text-primary">*</span>
-                            )}
-                          </span>
-                        ))}
-                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                        {description}
+                      </p>
 
-                      <div className="flex items-center justify-between pt-1 border-t border-border">
-                        <span className="font-mono text-[10px] text-muted-foreground">
-                          {t.id}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant={t.connected ? "ghost" : "outline"}
-                          disabled
-                        >
-                          {t.connected ? "Configured" : (
-                            <>
-                              <Plus className="size-3" /> Connect
-                            </>
-                          )}
-                        </Button>
+                      <div className="flex items-center gap-2">
+                        <ActionButton
+                          icon={<Zap className="size-3" />}
+                          label="Test"
+                        />
+                        <ActionButton
+                          icon={<Settings2 className="size-3" />}
+                          label="Settings"
+                        />
+                        <ActionButton
+                          icon={<Unplug className="size-3" />}
+                          label="Disconnect"
+                          className="ml-auto text-destructive/60 hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20"
+                        />
                       </div>
                     </motion.div>
                   );
@@ -147,5 +129,31 @@ export default function IntegrationsPage() {
         </div>
       </div>
     </>
+  );
+}
+
+function ActionButton({
+  icon,
+  label,
+  className,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  className?: string;
+}) {
+  return (
+    <button
+      className={cn(
+        "inline-flex items-center gap-1.5 h-7 px-2.5 text-xs rounded-lg",
+        "border border-border/60 bg-secondary/30 text-foreground/60",
+        "hover:bg-secondary/70 hover:text-foreground hover:border-border",
+        "transition-all duration-150 active:scale-95",
+        "touch-manipulation",
+        className,
+      )}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
