@@ -66,32 +66,34 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
 
   return (
     <div
-      className="px-3 md:px-4 pt-2 shrink-0"
-      style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
+      className="px-3 md:px-4 pt-1.5 shrink-0"
+      style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
     >
       <div className="max-w-3xl mx-auto">
         {/* Floating glass dock */}
         <motion.div
           layout
           className={cn(
-            "relative flex items-end gap-0.5 px-1.5 py-1.5",
-            "rounded-[26px]",
-            // Glass surface
-            "bg-card/55 backdrop-blur-2xl",
+            "relative flex items-end gap-0.5 px-1 py-1",
+            "rounded-[22px]",
+            // Glass surface — lighter, more premium
+            "bg-card/38 backdrop-blur-2xl",
             // Border
-            busy ? "border border-primary/25" : "border border-white/[0.07]",
+            busy ? "border border-primary/25" : "border border-white/[0.09]",
           )}
           style={{
             boxShadow: busy
               ? [
-                  "inset 0 1px 0 hsl(0 0% 100% / 0.09)",
-                  "0 0 0 0.5px hsl(28 100% 64% / 0.12)",
-                  "0 8px 32px -8px hsl(0 0% 0% / 0.55)",
+                  "inset 0 1px 0 hsl(0 0% 100% / 0.14)",
+                  "0 0 0 0.5px hsl(28 100% 64% / 0.15)",
+                  "0 0 20px -4px hsl(28 100% 64% / 0.08)",
+                  "0 6px 24px -6px hsl(0 0% 0% / 0.5)",
                 ].join(", ")
               : [
-                  "inset 0 1px 0 hsl(0 0% 100% / 0.09)",
-                  "0 0 0 0.5px hsl(0 0% 100% / 0.04)",
-                  "0 8px 32px -8px hsl(0 0% 0% / 0.55)",
+                  "inset 0 1px 0 hsl(0 0% 100% / 0.14)",
+                  "0 0 0 0.5px hsl(0 0% 100% / 0.08)",
+                  "0 0 20px -4px hsl(0 0% 100% / 0.04)",
+                  "0 6px 24px -6px hsl(0 0% 0% / 0.5)",
                 ].join(", "),
           }}
         >
@@ -100,9 +102,9 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
             type="button"
             disabled={busy}
             aria-label="Attach"
-            className="shrink-0 size-9 rounded-full flex items-center justify-center text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.06] disabled:opacity-30 transition-colors"
+            className="shrink-0 size-8 rounded-full flex items-center justify-center text-muted-foreground/85 hover:text-foreground hover:bg-white/[0.07] disabled:opacity-30 transition-colors"
           >
-            <Plus className="size-[17px]" strokeWidth={2} />
+            <Plus className="size-[15px]" strokeWidth={2} />
           </button>
 
           {/* Growing textarea */}
@@ -122,8 +124,8 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
             spellCheck={true}
             className={cn(
               "flex-1 bg-transparent border-0 resize-none outline-none ring-0",
-              "text-[15px] leading-[1.45] py-[9px] px-1",
-              "min-h-[36px] max-h-[180px]",
+              "text-[15px] leading-[1.45] py-[7px] px-1",
+              "min-h-[30px] max-h-[180px]",
               "placeholder:text-muted-foreground/40 text-foreground",
               "disabled:opacity-40 disabled:cursor-default",
               "scrollbar-none",
@@ -141,9 +143,9 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.7 }}
                 transition={{ duration: 0.15 }}
-                className="shrink-0 size-9 rounded-full flex items-center justify-center text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.06] transition-colors"
+                className="shrink-0 size-8 rounded-full flex items-center justify-center text-muted-foreground/85 hover:text-foreground hover:bg-white/[0.07] transition-colors"
               >
-                <Mic className="size-[17px]" strokeWidth={2} />
+                <Mic className="size-[15px]" strokeWidth={2} />
               </motion.button>
             )}
           </AnimatePresence>
@@ -154,7 +156,7 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
               type="button"
               onClick={stop}
               aria-label="Stop agent"
-              className="shrink-0 size-9 rounded-full border border-primary/30 bg-primary/15 flex items-center justify-center hover:bg-primary/25 transition-colors"
+              className="shrink-0 size-8 rounded-full border border-primary/30 bg-primary/15 flex items-center justify-center hover:bg-primary/25 transition-colors"
             >
               <Square className="size-3 fill-primary text-primary" />
             </button>
@@ -165,16 +167,16 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
               disabled={!hasText}
               aria-label="Send message"
               className={cn(
-                "shrink-0 size-9 rounded-full flex items-center justify-center transition-all duration-150 active:scale-95",
+                "shrink-0 size-8 rounded-full flex items-center justify-center transition-all duration-150 active:scale-95",
                 hasText
-                  ? "bg-primary hover:brightness-110 shadow-[0_2px_14px_-3px_hsl(28_100%_64%/0.55)]"
+                  ? "bg-primary hover:brightness-110 shadow-[0_2px_12px_-2px_hsl(28_100%_64%/0.6)]"
                   : "bg-white/[0.07] cursor-default",
               )}
             >
               <ArrowUp
                 className={cn(
-                  "size-[17px]",
-                  hasText ? "text-primary-foreground" : "text-muted-foreground/50",
+                  "size-[15px]",
+                  hasText ? "text-primary-foreground" : "text-muted-foreground/60",
                 )}
                 strokeWidth={2.5}
               />
