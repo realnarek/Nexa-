@@ -5,14 +5,12 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types";
 import { ToolExecutionCard } from "./tool-execution-card";
-import { Logo } from "@/components/common/logo";
 
 interface MessageBubbleProps {
   message: ChatMessage;
-  userName?: string;
 }
 
-export function MessageBubble({ message, userName }: MessageBubbleProps) {
+export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const renderedContent = isUser
     ? message.content
@@ -35,24 +33,8 @@ export function MessageBubble({ message, userName }: MessageBubbleProps) {
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className={cn(
-        "group flex gap-3 py-3 md:gap-4 md:py-5",
-        isUser ? "flex-row-reverse" : "flex-row",
-      )}
+      className="group flex py-3 md:py-5"
     >
-      {/* Avatar slot */}
-      <div className="shrink-0 pt-0.5">
-        {isUser ? (
-          <div className="grid place-items-center size-7 rounded-full bg-secondary border border-border text-xs font-medium">
-            {userName?.[0]?.toUpperCase() ?? "U"}
-          </div>
-        ) : (
-          <div className="size-7 grid place-items-center">
-            <Logo size="sm" showWordmark={false} />
-          </div>
-        )}
-      </div>
-
       <div
         className={cn(
           "flex-1 min-w-0 space-y-3",

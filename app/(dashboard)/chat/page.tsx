@@ -90,7 +90,7 @@ export default function ChatPage() {
           {hasMessages ? (
             <div className="max-w-3xl mx-auto w-full px-3 md:px-6 py-3 md:py-4">
               {messages.map((m) => (
-                <MessageBubble key={m.id} message={m} userName={user?.name} />
+                <MessageBubble key={m.id} message={m} />
               ))}
               <div className="h-4" />
             </div>

@@ -123,21 +123,10 @@ function DemoMessageBubble({ msg }: { msg: DemoMessage }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "flex gap-3",
-        isUser ? "flex-row-reverse" : "flex-row",
+        "flex",
+        isUser ? "justify-end" : "justify-start",
       )}
     >
-      <div
-        className={cn(
-          "flex-shrink-0 size-8 rounded-full grid place-items-center text-xs font-semibold",
-          isUser
-            ? "bg-[#d4a574] text-[#0a0e27]"
-            : "bg-[#1a2040] border border-[rgba(255,255,255,0.1)] text-[#d4a574]",
-        )}
-      >
-        {isUser ? "U" : "N"}
-      </div>
-
       <div
         className={cn(
           "max-w-[78%] rounded-2xl px-4 py-3",
