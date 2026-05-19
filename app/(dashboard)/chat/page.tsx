@@ -2,12 +2,13 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, NotebookPen, Mail, ListChecks } from "lucide-react";
+import { Globe, NotebookPen, Mail, ListChecks, ChevronDown } from "lucide-react";
 import { TopBar } from "@/components/layout/top-bar";
 import { ChatComposer } from "@/components/chat/chat-composer";
 import { MessageBubble } from "@/components/chat/message-bubble";
 import { useChatStore, useActiveConversation } from "@/store/chat-store";
 import { useAuthStore } from "@/store/auth-store";
+import { useScrollController } from "@/hooks/use-scroll-controller";
 
 const SUGGESTIONS = [
   {
@@ -36,24 +37,37 @@ export default function ChatPage() {
   const conversation = useActiveConversation();
   const sendMessage = useChatStore((s) => s.sendMessage);
   const user = useAuthStore((s) => s.user);
-  const scrollerRef = React.useRef<HTMLDivElement>(null);
+
+  const { scrollerRef, showJumpButton, scrollToBottom, scrollOnSend, onContentGrow } =
+    useScrollController();
 
   const messages = conversation?.messages ?? [];
   const hasMessages = messages.length > 0;
   const lastContent = messages[messages.length - 1]?.content ?? "";
 
-  // Ensure an empty conversation exists in the store as soon as the chat page mounts
+  // Count only user messages so we know when the user has sent a new one.
+  // Using a filter here is fine — the list is bounded by a single conversation.
+  const userMessageCount = messages.filter((m) => m.role === "user").length;
+
+  // Ensure an empty conversation exists as soon as the chat page mounts.
   React.useEffect(() => {
     const { activeId, newConversation } = useChatStore.getState();
     if (!activeId) newConversation();
   }, []);
 
-  // Auto-scroll to bottom as messages stream in
+  // Jump to bottom (instant) each time the user sends a message, and enter
+  // auto-follow mode so streaming content keeps the viewport pinned to the
+  // bottom until the user manually scrolls away.
   React.useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [messages.length, lastContent]);
+    if (userMessageCount > 0) scrollOnSend();
+  }, [userMessageCount, scrollOnSend]);
+
+  // While streaming, keep the viewport at the bottom only if auto-follow mode
+  // is still active (i.e. the user has not scrolled away since sending).
+  // This replaces the old "auto-scroll on every delta" behaviour.
+  React.useEffect(() => {
+    onContentGrow();
+  }, [lastContent, onContentGrow]);
 
   return (
     <>
@@ -66,7 +80,8 @@ export default function ChatPage() {
         }
       />
 
-      <div className="flex-1 flex flex-col min-h-0">
+      {/* relative so the floating button can be absolutely positioned within */}
+      <div className="flex-1 flex flex-col min-h-0 relative">
         {/* Message area — always rendered so layout is stable */}
         <div
           ref={scrollerRef}
@@ -92,6 +107,37 @@ export default function ChatPage() {
             </div>
           )}
         </div>
+
+        {/*
+          Floating "scroll to bottom" button.
+          Positioned above the composer using env(safe-area-inset-bottom) so it
+          stays above the home indicator on iOS and the keyboard on Android/PWA.
+          Uses pointer-events-none on the wrapper so the transparent area around
+          the button never blocks touches on the message list or composer.
+        */}
+        <AnimatePresence>
+          {showJumpButton && (
+            <motion.div
+              className="absolute inset-x-0 flex justify-center pointer-events-none z-20"
+              style={{
+                bottom:
+                  "calc(max(16px, env(safe-area-inset-bottom, 16px)) + 100px)",
+              }}
+              initial={{ opacity: 0, scale: 0.8, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 6 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <button
+                onClick={scrollToBottom}
+                className="pointer-events-auto size-9 rounded-full bg-background border border-border/80 shadow-lg grid place-items-center hover:bg-secondary transition-colors"
+                aria-label="Scroll to latest message"
+              >
+                <ChevronDown className="size-4 text-foreground/70" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Suggestion chips — visible above composer when conversation is empty */}
         <AnimatePresence>
