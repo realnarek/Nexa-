@@ -418,7 +418,8 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    // Do not intercept Enter during IME composition (Gboard, Samsung, iOS)
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       sendDemoMessage();
     }
@@ -922,6 +923,10 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Ask Nexa anything..."
+                    autoCorrect="on"
+                    autoCapitalize="sentences"
+                    autoComplete="on"
+                    spellCheck={true}
                     className="flex-1 bg-transparent py-2.5 text-sm text-white placeholder-[rgba(255,255,255,0.35)] outline-none min-h-[44px]"
                   />
                   <button
