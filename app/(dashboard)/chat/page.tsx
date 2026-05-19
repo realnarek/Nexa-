@@ -92,7 +92,7 @@ export default function ChatPage() {
               {messages.map((m) => (
                 <MessageBubble key={m.id} message={m} userName={user?.name} />
               ))}
-              <div className="h-4" />
+              <div className="h-8" />
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center px-4">
