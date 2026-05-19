@@ -21,7 +21,6 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
   const isComposing = React.useRef(false);
   const busy = status !== "idle" && status !== "error";
 
-  // Auto-resize: reset to auto first so scrollHeight reflects true content height
   React.useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -29,7 +28,6 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
     el.style.height = Math.min(el.scrollHeight, 200) + "px";
   }, [value]);
 
-  // Focus input on new empty chats (autoFocus) or when a seed prompt is set
   React.useEffect(() => {
     if (typeof window === "undefined") return;
     const seed = sessionStorage.getItem("nexa.seed-prompt");
@@ -61,48 +59,48 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
   };
 
   return (
-    // Outer wrapper: transparent — no fill, no gradient.
-    // Safe-area + keyboard inset are handled by paddingBottom inline style
-    // (env(safe-area-inset-bottom) for iOS home indicator;
-    //  --vvh on the parent container already absorbs the Android keyboard inset).
+    // Outer wrapper transparent — safe-area padding via inline style only.
+    // env(safe-area-inset-bottom) covers iOS home indicator.
+    // --vvh on the parent already absorbs the Android keyboard inset.
     <div
       className="px-4 md:px-6 pt-2"
-      style={{
-        paddingBottom: "max(16px, env(safe-area-inset-bottom))",
-      }}
+      style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
     >
       <div className="max-w-3xl mx-auto">
-        {/* Glass pill — the only elevated surface */}
+        {/*
+          Pill geometry: py-[7px] shell + 30px content row = 44px total.
+          items-center keeps every child on the same visual baseline so the
+          input doesn't float above the icons (the "stacked card" problem).
+          When the textarea grows beyond one line the pill expands symmetrically,
+          which is standard for AI/messaging inputs.
+        */}
         <motion.div
           layout
           className={cn(
-            // Single-row flex; items-end keeps buttons pinned to the bottom
-            // edge when the textarea grows beyond one line (ChatGPT / Arc pattern)
-            "flex items-end gap-1 px-1.5 py-1.5",
+            "flex items-center gap-1 px-2 py-[7px]",
             "rounded-3xl overflow-hidden transition-colors",
-            // Translucent dark glass surface + blur
             "bg-card/90 backdrop-blur-xl",
-            // Hairline border that shifts to primary tint while the agent is busy
-            "border",
-            // Soft ambient drop shadow + 1 px top-edge highlight inside the glass
-            "shadow-[0_2px_16px_-4px_hsl(0_0%_0%/0.5),inset_0_1px_0_hsl(0_0%_100%/0.04)]",
+            "border shadow-[0_2px_12px_-4px_hsl(0_0%_0%/0.4),inset_0_1px_0_hsl(0_0%_100%/0.04)]",
             busy ? "border-primary/25" : "border-white/[0.08]",
           )}
         >
-          {/* ── Left: attach / expand ─────────────────────── */}
+          {/* Attach — 30 × 30, same height as textarea and send button */}
           <Button
             variant="ghost"
             size="icon"
             disabled
             aria-label="Attach"
-            className="shrink-0 rounded-full text-muted-foreground/60 hover:text-muted-foreground"
+            className="shrink-0 h-[30px] w-[30px] rounded-full text-muted-foreground/50 hover:text-muted-foreground"
           >
-            <Plus className="size-4" />
+            <Plus className="size-[15px]" />
           </Button>
 
-          {/* ── Center: autogrow textarea ─────────────────── */}
-          {/* Override the component's default min-h-[60px] with min-h-0 so   */}
-          {/* rows={1} actually produces a single-line height on mount.        */}
+          {/*
+            Textarea: py-[5px] + leading-5 (20px) = 30px single-line height,
+            matching the 30px buttons so items-center produces true alignment.
+            style minHeight:0 is belt-and-suspenders over the CSS min-h-0 class —
+            the component default min-h-[60px] must not win here.
+          */}
           <Textarea
             ref={textareaRef}
             value={value}
@@ -117,26 +115,21 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
             autoCapitalize="sentences"
             autoComplete="on"
             spellCheck={true}
-            className={cn(
-              "flex-1 min-h-0 border-0 bg-transparent",
-              "px-0 py-[7px] text-[15px] leading-[1.4]",
-              "focus-visible:ring-0 max-h-[160px]",
-              "placeholder:text-muted-foreground/50",
-            )}
+            className="flex-1 min-h-0 border-0 bg-transparent px-1 py-[5px] text-[15px] leading-5 focus-visible:ring-0 max-h-[120px] placeholder:text-muted-foreground/50"
+            style={{ minHeight: 0 }}
           />
 
-          {/* ── Right: mic + send / stop ──────────────────── */}
+          {/* Right cluster: mic (idle only) + send / stop */}
           <div className="flex items-center shrink-0 gap-0.5">
-            {/* Mic visible only when idle so the stop button has room */}
             {!busy && (
               <Button
                 variant="ghost"
                 size="icon"
                 disabled
                 aria-label="Voice input"
-                className="shrink-0 rounded-full text-muted-foreground/60 hover:text-muted-foreground"
+                className="shrink-0 h-[30px] w-[30px] rounded-full text-muted-foreground/50 hover:text-muted-foreground"
               >
-                <Mic className="size-4" />
+                <Mic className="size-[15px]" />
               </Button>
             )}
 
@@ -146,28 +139,26 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
                 variant="outline"
                 onClick={stop}
                 aria-label="Stop agent"
-                className="shrink-0 rounded-full border-muted-foreground/25 text-muted-foreground hover:bg-muted/20"
+                className="shrink-0 h-[30px] w-[30px] rounded-full border-muted-foreground/25 text-muted-foreground hover:bg-muted/20"
               >
-                <Square className="size-3.5 fill-current" />
+                <Square className="size-3 fill-current" />
               </Button>
             ) : (
-              // Default variant = bg-primary (orange) + primary-foreground
               <Button
                 size="icon"
                 onClick={submit}
                 disabled={!value.trim()}
                 aria-label="Send message"
-                className="shrink-0 rounded-full disabled:opacity-30"
+                className="shrink-0 h-[30px] w-[30px] rounded-full disabled:opacity-30"
               >
-                <ArrowUp className="size-4" />
+                <ArrowUp className="size-[14px]" />
               </Button>
             )}
           </div>
         </motion.div>
 
-        {/* Inline agent-state label — below the pill, not inside it */}
         {busy && (
-          <div className="flex items-center justify-center gap-2 mt-2.5 font-mono text-[11px] text-muted-foreground">
+          <div className="flex items-center justify-center gap-2 mt-2 font-mono text-[11px] text-muted-foreground">
             <Loader2 className="size-3 animate-spin text-primary" />
             <span className="uppercase tracking-wider">
               {status === "thinking" && "Planning"}
