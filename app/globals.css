@@ -244,4 +244,12 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
+
+  /* Safe text wrapping — prevents long unbroken strings (URLs, JSON, errors)
+     from overflowing their container and breaking the horizontal layout. */
+  .text-overflow-safe {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    min-width: 0;
+  }
 }
