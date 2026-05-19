@@ -4,6 +4,12 @@
 
 @layer base {
   :root {
+    /* Visual-viewport height (updated by useVisualViewport hook).
+       Initialized to 100dvh so SSR / JS-disabled renders get a sane value. */
+    --vvh: 100dvh;
+    /* Estimated on-screen keyboard height in px (0 when keyboard is hidden). */
+    --keyboard-inset: 0px;
+
     /* Light mode (still available for toggle) */
     --background: 40 20% 98%;
     --foreground: 0 0% 8%;

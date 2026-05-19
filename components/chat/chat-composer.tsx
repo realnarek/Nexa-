@@ -63,7 +63,13 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
   return (
     <div
       className="px-3 md:px-6 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent"
-      style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
+      style={{
+        // env(safe-area-inset-bottom) covers the iOS home indicator.
+        // On Android the container height already tracks --vvh (visual viewport)
+        // so the keyboard inset is already factored in; the 16px minimum gives
+        // comfortable breathing room at the bottom.
+        paddingBottom: "max(16px, env(safe-area-inset-bottom))",
+      }}
     >
       <div className="max-w-3xl mx-auto">
         <motion.div

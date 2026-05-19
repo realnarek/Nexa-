@@ -25,6 +25,7 @@ import { useChatStore } from "@/store/chat-store";
 import { useAuthStore } from "@/store/auth-store";
 import { useUIStore } from "@/store/ui-store";
 import { ConversationRenameRow } from "./ConversationRenameRow";
+import { useVisualViewport } from "@/hooks/use-visual-viewport";
 import type { Conversation } from "@/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -486,6 +487,11 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
     [deleteConversation],
   );
 
+  // Sync --vvh / --keyboard-inset CSS variables via visualViewport API.
+  // Fixes the Android keyboard-overlay bug where h-dvh uses the stale layout
+  // viewport instead of the actual visible area above the keyboard.
+  useVisualViewport();
+
   // Diagnostic: log persisted conversation health on first render
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -503,8 +509,17 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
 
   return (
     <div
-      className="flex h-dvh w-full overflow-hidden"
-      style={{ background: "#0a0e27", color: "#ffffff" }}
+      className="flex w-full overflow-hidden"
+      style={{
+        // Use the visual-viewport height instead of 100dvh / h-dvh.
+        // On Android, dvh reflects the layout viewport which stays stale when
+        // the software keyboard opens or after returning from another app.
+        // --vvh is kept in sync by useVisualViewport() via the visualViewport
+        // API, so this container always matches the area above the keyboard.
+        height: "var(--vvh, 100dvh)",
+        background: "#0a0e27",
+        color: "#ffffff",
+      }}
     >
       {/* ── Mobile overlay ── */}
       <AnimatePresence>
