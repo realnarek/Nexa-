@@ -6,13 +6,14 @@ export function PWARegister() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 
-    // Guard against the controllerchange reload firing more than once per tab.
+    // Guard: prevent multiple reloads within the same tab lifetime.
     let reloading = false;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
+    // Holds teardown logic once registration succeeds.
+    let cleanup: (() => void) | null = null;
 
+    // Set up controllerchange BEFORE registering so we never miss the event.
+    // Fires when a new SW calls skipWaiting() + clients.claim() and takes over.
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      // A new SW just called skipWaiting() + clients.claim() and took over.
-      // Reload so the page is served by the fresh deployment.
       if (reloading) return;
       reloading = true;
       window.location.reload();
@@ -21,15 +22,36 @@ export function PWARegister() {
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })
       .then((registration) => {
-        // Check for a new SW version every 60 s while the tab is open.
-        intervalId = setInterval(() => registration.update(), 60_000);
+        // 1. Immediate check on every page load — catches deployments that
+        //    happened while the tab was closed or the app was backgrounded.
+        registration.update().catch(() => {});
+
+        // 2. Periodic check every 20 s while the tab is open.
+        const intervalId = setInterval(() => {
+          registration.update().catch(() => {});
+        }, 20_000);
+
+        // 3. Check immediately when the user returns to this tab.
+        //    Android Chrome aggressively throttles background timers, so the
+        //    interval alone is unreliable for backgrounded PWAs.
+        const onVisibilityChange = () => {
+          if (document.visibilityState === "visible") {
+            registration.update().catch(() => {});
+          }
+        };
+        document.addEventListener("visibilitychange", onVisibilityChange);
+
+        cleanup = () => {
+          clearInterval(intervalId);
+          document.removeEventListener("visibilitychange", onVisibilityChange);
+        };
       })
       .catch(() => {
-        // SW registration may fail in dev or non-HTTPS environments — that's fine.
+        // SW registration may fail in dev (non-HTTPS) or incognito — ignore.
       });
 
     return () => {
-      if (intervalId !== null) clearInterval(intervalId);
+      cleanup?.();
     };
   }, []);
 

@@ -1,8 +1,9 @@
 import { readFileSync } from "fs";
 import path from "path";
 
-// Computed once at module load — stable for the lifetime of this server process
-// and unique per deployment. Priority: Vercel ID → git SHA → Next.js build ID → dev fallback.
+// Stable per deployment: Vercel deployment ID → git SHA → Next.js build ID → dev constant.
+// Computed at request time (force-dynamic) so the origin always serves the correct version
+// without relying on CDN propagation timing.
 const CACHE_VERSION = (() => {
   if (process.env.VERCEL_DEPLOYMENT_ID)
     return process.env.VERCEL_DEPLOYMENT_ID.slice(0, 16);
@@ -14,7 +15,8 @@ const CACHE_VERSION = (() => {
       "utf-8"
     ).trim();
   } catch {
-    return String(Date.now());
+    // In `next dev` the BUILD_ID file may not exist yet; use a stable dev marker.
+    return process.env.NODE_ENV === "development" ? "dev" : String(Date.now());
   }
 })();
 
@@ -94,7 +96,6 @@ async function networkFirstNavigation(request) {
   try {
     const response = await fetch(request);
     if (response.ok) {
-      // Store fresh HTML for offline use only — never serve this stale.
       const cache = await caches.open(SHELL_CACHE);
       cache.put(request, response.clone());
     }
@@ -122,17 +123,24 @@ async function staleWhileRevalidate(request, cacheName) {
 `.trim();
 }
 
-// Statically pre-render this response at build time so every request in a
-// given deployment gets the exact same SW bytes — triggering a browser SW
-// update only when the deployment actually changes.
-export const dynamic = "force-static";
+// force-dynamic: every browser request hits the origin function directly.
+// This guarantees the browser always receives the current deployment's SW bytes
+// without waiting for CDN edge propagation — which is critical because browsers
+// use a byte-diff check to detect SW updates.
+export const dynamic = "force-dynamic";
 
 export function GET() {
   return new Response(buildServiceWorker(CACHE_VERSION), {
     headers: {
       "Content-Type": "application/javascript; charset=utf-8",
+      // Tell browsers never to cache sw.js — it must be re-fetched on every update check.
       "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
       "Service-Worker-Allowed": "/",
+      // Vercel-specific: bypass the edge CDN cache so the origin function is always reached.
+      "Vercel-CDN-Cache-Control": "no-store",
+      "CDN-Cache-Control": "no-store",
     },
   });
 }
