@@ -62,7 +62,7 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
 
   return (
     <div
-      className="px-3 md:px-6 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent"
+      className="px-3 md:px-6 pt-3"
       style={{
         // env(safe-area-inset-bottom) covers the iOS home indicator.
         // On Android the container height already tracks --vvh (visual viewport)
@@ -75,8 +75,10 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
         <motion.div
           layout
           className={cn(
-            "surface-elevated rounded-2xl overflow-hidden transition-colors",
-            busy && "border-primary/30",
+            "rounded-3xl overflow-hidden transition-colors",
+            "bg-card/85 backdrop-blur-xl",
+            "border shadow-[0_8px_32px_-12px_hsl(0_0%_0%/0.6),inset_0_1px_0_hsl(0_0%_100%/0.05)]",
+            busy ? "border-primary/30" : "border-white/10",
           )}
         >
           <Textarea
