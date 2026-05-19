@@ -7,7 +7,7 @@ const SCROLL_STOP_DELAY = 200; // ms after last scroll event before evaluating
 const AUTO_HIDE_DELAY = 2750; // ms of inactivity before hiding the button
 
 export interface ScrollController {
-  scrollerRef: RefObject<HTMLDivElement>;
+  scrollerRef: RefObject<HTMLDivElement | null>;
   showJumpButton: boolean;
   /** Smooth scroll to bottom (for button click). Enters auto-follow mode. */
   scrollToBottom: () => void;
