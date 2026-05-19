@@ -66,32 +66,34 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
 
   return (
     <div
-      className="px-3 md:px-4 pt-2 shrink-0"
-      style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
+      className="px-3 md:px-4 pt-1.5 shrink-0"
+      style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
     >
       <div className="max-w-3xl mx-auto">
         {/* Floating glass dock */}
         <motion.div
           layout
           className={cn(
-            "relative flex items-end gap-0.5 px-1.5 py-1.5",
+            "relative flex items-end gap-0.5 px-1.5 py-1",
             "rounded-[26px]",
-            // Glass surface
-            "bg-card/55 backdrop-blur-2xl",
-            // Border
-            busy ? "border border-primary/25" : "border border-white/[0.07]",
+            // Glass surface — lighter opacity + stronger blur for premium translucency
+            "bg-card/42 backdrop-blur-[52px]",
+            // Border — slightly brighter rim light
+            busy ? "border border-primary/25" : "border border-white/[0.10]",
           )}
           style={{
             boxShadow: busy
               ? [
-                  "inset 0 1px 0 hsl(0 0% 100% / 0.09)",
-                  "0 0 0 0.5px hsl(28 100% 64% / 0.12)",
-                  "0 8px 32px -8px hsl(0 0% 0% / 0.55)",
+                  "inset 0 1px 0 hsl(0 0% 100% / 0.13)",
+                  "0 0 0 0.5px hsl(28 100% 64% / 0.14)",
+                  "0 0 28px -4px hsl(28 100% 64% / 0.07)",
+                  "0 6px 28px -6px hsl(0 0% 0% / 0.48)",
                 ].join(", ")
               : [
-                  "inset 0 1px 0 hsl(0 0% 100% / 0.09)",
-                  "0 0 0 0.5px hsl(0 0% 100% / 0.04)",
-                  "0 8px 32px -8px hsl(0 0% 0% / 0.55)",
+                  "inset 0 1px 0 hsl(0 0% 100% / 0.13)",
+                  "0 0 0 0.5px hsl(0 0% 100% / 0.07)",
+                  "0 0 28px -4px hsl(0 0% 100% / 0.03)",
+                  "0 6px 28px -6px hsl(0 0% 0% / 0.48)",
                 ].join(", "),
           }}
         >
@@ -100,7 +102,7 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
             type="button"
             disabled={busy}
             aria-label="Attach"
-            className="shrink-0 size-9 rounded-full flex items-center justify-center text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.06] disabled:opacity-30 transition-colors"
+            className="shrink-0 size-9 rounded-full flex items-center justify-center text-muted-foreground/80 hover:text-foreground hover:bg-white/[0.06] disabled:opacity-30 transition-colors"
           >
             <Plus className="size-[17px]" strokeWidth={2} />
           </button>
@@ -122,7 +124,7 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
             spellCheck={true}
             className={cn(
               "flex-1 bg-transparent border-0 resize-none outline-none ring-0",
-              "text-[15px] leading-[1.45] py-[9px] px-1",
+              "text-[15px] leading-[1.45] py-[7px] px-1",
               "min-h-[36px] max-h-[180px]",
               "placeholder:text-muted-foreground/40 text-foreground",
               "disabled:opacity-40 disabled:cursor-default",
@@ -141,7 +143,7 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.7 }}
                 transition={{ duration: 0.15 }}
-                className="shrink-0 size-9 rounded-full flex items-center justify-center text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.06] transition-colors"
+                className="shrink-0 size-9 rounded-full flex items-center justify-center text-muted-foreground/80 hover:text-foreground hover:bg-white/[0.06] transition-colors"
               >
                 <Mic className="size-[17px]" strokeWidth={2} />
               </motion.button>
@@ -174,7 +176,7 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
               <ArrowUp
                 className={cn(
                   "size-[17px]",
-                  hasText ? "text-primary-foreground" : "text-muted-foreground/50",
+                  hasText ? "text-primary-foreground" : "text-muted-foreground/65",
                 )}
                 strokeWidth={2.5}
               />
