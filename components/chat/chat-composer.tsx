@@ -18,6 +18,7 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
   const status = useChatStore((s) => s.status);
   const stop = useChatStore((s) => s.stopAgent);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const isComposing = React.useRef(false);
   const busy = status !== "idle" && status !== "error";
 
   // Auto-resize textarea
@@ -52,7 +53,8 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    // Do not intercept Enter during IME composition (Gboard, Samsung, iOS)
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && !isComposing.current) {
       e.preventDefault();
       submit();
     }
@@ -76,6 +78,8 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={onKeyDown}
+            onCompositionStart={() => { isComposing.current = true; }}
+            onCompositionEnd={() => { isComposing.current = false; }}
             placeholder={
               busy
                 ? "Agent is working… press Stop to interrupt."
@@ -83,6 +87,10 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
             }
             disabled={busy}
             rows={1}
+            autoCorrect="on"
+            autoCapitalize="sentences"
+            autoComplete="on"
+            spellCheck={true}
             className="border-0 bg-transparent px-4 py-3 text-[15px] focus-visible:ring-0 max-h-[160px]"
           />
           <div className="flex items-center justify-between px-3 pb-2">
