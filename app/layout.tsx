@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Instrument_Serif } from "next/font/google";
 import { Providers } from "@/components/common/providers";
+import { PWARegister } from "@/components/common/pwa-register";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
@@ -18,6 +19,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: light)", color: "#0a0a0a" },
+  ],
 };
 
 export const metadata: Metadata = {
@@ -29,6 +34,14 @@ export const metadata: Metadata = {
     title: "Nexa",
     description: "An AI operating system for the rest of us.",
     type: "website",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Nexa",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 
@@ -49,6 +62,7 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased">
         <Providers>{children}</Providers>
+        <PWARegister />
       </body>
     </html>
   );
