@@ -19,12 +19,13 @@ import {
   ChevronRight,
   Trash2,
   Pencil,
-  Check,
 } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
 import { useChatStore } from "@/store/chat-store";
 import { useAuthStore } from "@/store/auth-store";
 import { useUIStore } from "@/store/ui-store";
+import { ConversationRenameRow } from "./ConversationRenameRow";
+import type { Conversation } from "@/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -164,6 +165,187 @@ function DemoMessageBubble({ msg }: { msg: DemoMessage }) {
   );
 }
 
+// ─── ConversationRow ─────────────────────────────────────────────────────────
+
+interface ConversationRowProps {
+  conversation: Conversation;
+  isActive: boolean;
+  menuOpen: boolean;
+  isRenaming: boolean;
+  onActivate: (id: string) => void;
+  onMenuToggle: (id: string) => void;
+  onRenameStart: (id: string) => void;
+  onSave: (id: string, title: string) => void;
+  onCancel: () => void;
+  onDelete: (id: string) => void;
+}
+
+const ConversationRow = React.memo(function ConversationRow({
+  conversation: c,
+  isActive,
+  menuOpen,
+  isRenaming,
+  onActivate,
+  onMenuToggle,
+  onRenameStart,
+  onSave,
+  onCancel,
+  onDelete,
+}: ConversationRowProps) {
+  // Lifecycle: rerender log
+  const renderCountRef = React.useRef(0);
+  renderCountRef.current += 1;
+  if (renderCountRef.current > 1) {
+    console.debug("[ConversationRow] rerender", {
+      id: c.id,
+      isActive,
+      menuOpen,
+      isRenaming,
+      renderCount: renderCountRef.current,
+    });
+  }
+
+  return (
+    <div
+      className="rounded-md"
+      style={{
+        background:
+          isActive || menuOpen || isRenaming
+            ? "rgba(255,255,255,0.08)"
+            : "transparent",
+      }}
+      onMouseEnter={(e) => {
+        if (!isActive && !menuOpen && !isRenaming)
+          e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+      }}
+      onMouseLeave={(e) => {
+        if (!isActive && !menuOpen && !isRenaming)
+          e.currentTarget.style.background = "transparent";
+      }}
+    >
+      {/* Row: link + three-dot */}
+      <div className="flex items-center group">
+        <Link
+          href="/chat"
+          onClick={() => onActivate(c.id)}
+          className="flex-1 min-w-0 px-3 py-2 min-h-[40px] flex flex-col justify-center"
+        >
+          <div
+            className="text-sm font-medium truncate"
+            style={{ color: isActive ? "#ffffff" : "rgba(255,255,255,0.7)" }}
+          >
+            {c.title}
+          </div>
+          <div
+            className="font-mono text-[10px] mt-0.5"
+            style={{ color: "rgba(255,255,255,0.3)" }}
+          >
+            {timeAgo(c.updatedAt)}
+          </div>
+        </Link>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onMenuToggle(c.id);
+          }}
+          className={cn(
+            "shrink-0 grid place-items-center size-7 rounded-md mr-1.5 transition-all duration-150",
+            menuOpen
+              ? "opacity-100"
+              : "opacity-50 md:opacity-0 md:group-hover:opacity-100",
+          )}
+          style={{ color: menuOpen ? "#d4a574" : "rgba(255,255,255,0.6)" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+            if (!menuOpen) e.currentTarget.style.color = "#ffffff";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = menuOpen
+              ? "#d4a574"
+              : "rgba(255,255,255,0.6)";
+          }}
+          aria-label="Conversation options"
+        >
+          <MoreVertical size={12} />
+        </button>
+      </div>
+
+      {/* Rename input — rendered outside AnimatePresence so it stays
+          mounted regardless of menu open/close or sidebar rerenders. */}
+      {isRenaming && (
+        <ConversationRenameRow
+          conversationId={c.id}
+          initialTitle={c.title ?? ""}
+          onSave={onSave}
+          onCancel={onCancel}
+        />
+      )}
+
+      {/* Animated menu actions — never wraps the rename input */}
+      <AnimatePresence>
+        {menuOpen && !isRenaming && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.15 }}
+            className="overflow-hidden"
+          >
+            <div className="px-2 pb-2">
+              <div
+                className="flex gap-1.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => onRenameStart(c.id)}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs transition-colors"
+                  style={{
+                    color: "rgba(255,255,255,0.65)",
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "#ffffff";
+                    e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "rgba(255,255,255,0.65)";
+                    e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                  }}
+                >
+                  <Pencil size={11} />
+                  Rename
+                </button>
+                <button
+                  onClick={() => onDelete(c.id)}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs transition-colors"
+                  style={{
+                    color: "rgba(239,68,68,0.75)",
+                    background: "rgba(239,68,68,0.06)",
+                    border: "1px solid rgba(239,68,68,0.12)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "#ef4444";
+                    e.currentTarget.style.background = "rgba(239,68,68,0.14)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "rgba(239,68,68,0.75)";
+                    e.currentTarget.style.background = "rgba(239,68,68,0.06)";
+                  }}
+                >
+                  <Trash2 size={11} />
+                  Delete
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+});
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function NexaChatUI({ children }: { children?: React.ReactNode }) {
@@ -242,52 +424,71 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
     }
   };
 
-  const closeSidebar = () => setMobileSidebarOpen(false);
+  const closeSidebar = React.useCallback(
+    () => setMobileSidebarOpen(false),
+    [setMobileSidebarOpen],
+  );
 
   const [menuOpenId, setMenuOpenId] = React.useState<string | null>(null);
   const [renamingId, setRenamingId] = React.useState<string | null>(null);
-  const [renameValue, setRenameValue] = React.useState("");
 
-  const saveRename = (id: string) => {
-    // Guard against undefined renameValue from legacy conversations with missing title
-    const trimmed = (renameValue ?? "").trim();
-    if (trimmed) renameConversation(id, trimmed);
-    setRenamingId(null);
-    setMenuOpenId(null);
-  };
-
-  // Outside-click handler: must clear both menuOpenId AND renamingId so the
-  // rename input doesn't reappear stale on the next open, and so the onBlur
-  // guard below correctly skips the spurious save triggered by AnimatePresence
-  // unmounting the focused input.
+  // Outside-click: close the menu only. Rename stays active until the user
+  // explicitly saves (Enter / ✓) or cancels (Escape / ✗).
   React.useEffect(() => {
     if (!menuOpenId) return;
     const handler = () => {
-      console.debug("[Nexa:rename] outside-click close", { menuOpenId, renamingId });
+      console.debug("[Nexa:sidebar] outside-click close menu", { menuOpenId });
       setMenuOpenId(null);
-      setRenamingId(null);
     };
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
-  }, [menuOpenId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [menuOpenId]);
 
-  // Diagnostic: log rename/menu state changes so production divergence is visible
-  React.useEffect(() => {
-    if (menuOpenId !== null || renamingId !== null) {
-      console.debug("[Nexa:rename] state", {
-        menuOpenId,
-        renamingId,
-        renameValue,
-        activeConversationId: activeId,
-        convCount: conversations.length,
-      });
-    }
-  }, [menuOpenId, renamingId, renameValue, activeId, conversations.length]);
+  // Stable callbacks — all state setters and store actions are already stable.
+  const handleActivate = React.useCallback(
+    (id: string) => {
+      setActive(id);
+      setMobileSidebarOpen(false);
+      setMenuOpenId(null);
+    },
+    [setActive, setMobileSidebarOpen],
+  );
+
+  const handleMenuToggle = React.useCallback((id: string) => {
+    setMenuOpenId((prev) => (prev === id ? null : id));
+    setRenamingId(null);
+  }, []);
+
+  const handleRenameStart = React.useCallback((id: string) => {
+    setRenamingId(id);
+  }, []);
+
+  const handleSave = React.useCallback(
+    (id: string, title: string) => {
+      renameConversation(id, title);
+      setRenamingId(null);
+      setMenuOpenId(null);
+    },
+    [renameConversation],
+  );
+
+  const handleCancel = React.useCallback(() => {
+    setRenamingId(null);
+    setMenuOpenId(null);
+  }, []);
+
+  const handleDelete = React.useCallback(
+    (id: string) => {
+      deleteConversation(id);
+      setMenuOpenId(null);
+    },
+    [deleteConversation],
+  );
 
   // Diagnostic: log persisted conversation health on first render
   React.useEffect(() => {
     if (typeof window === "undefined") return;
-    console.debug("[Nexa:rename] mounted conversations", conversations.slice(0, 5).map((c) => ({
+    console.debug("[Nexa:sidebar] mounted conversations", conversations.slice(0, 5).map((c) => ({
       id: c.id,
       title: c.title,
       titleType: typeof c.title,
@@ -499,244 +700,30 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
               </li>
             ) : (
               <AnimatePresence initial={false}>
-                {conversations.slice(0, 12).map((c) => {
-                  const isActive = c.id === activeId;
-                  const menuOpen = menuOpenId === c.id;
-                  const isRenaming = renamingId === c.id;
-                  return (
-                    <motion.li
-                      key={c.id}
-                      layout
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div
-                        className="rounded-md"
-                        style={{
-                          background:
-                            isActive || menuOpen
-                              ? "rgba(255,255,255,0.08)"
-                              : "transparent",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isActive && !menuOpen)
-                            e.currentTarget.style.background =
-                              "rgba(255,255,255,0.05)";
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isActive && !menuOpen)
-                            e.currentTarget.style.background = "transparent";
-                        }}
-                      >
-                        {/* Row: link + three-dot */}
-                        <div className="flex items-center group">
-                          <Link
-                            href="/chat"
-                            onClick={() => {
-                              setActive(c.id);
-                              closeSidebar();
-                              setMenuOpenId(null);
-                            }}
-                            className="flex-1 min-w-0 px-3 py-2 min-h-[40px] flex flex-col justify-center"
-                          >
-                            <div
-                              className="text-sm font-medium truncate"
-                              style={{
-                                color: isActive
-                                  ? "#ffffff"
-                                  : "rgba(255,255,255,0.7)",
-                              }}
-                            >
-                              {c.title}
-                            </div>
-                            <div
-                              className="font-mono text-[10px] mt-0.5"
-                              style={{ color: "rgba(255,255,255,0.3)" }}
-                            >
-                              {timeAgo(c.updatedAt)}
-                            </div>
-                          </Link>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setMenuOpenId(menuOpen ? null : c.id);
-                              setRenamingId(null);
-                            }}
-                            className={cn(
-                              "shrink-0 grid place-items-center size-7 rounded-md mr-1.5 transition-all duration-150",
-                              menuOpen
-                                ? "opacity-100"
-                                : "opacity-50 md:opacity-0 md:group-hover:opacity-100",
-                            )}
-                            style={{
-                              color: menuOpen
-                                ? "#d4a574"
-                                : "rgba(255,255,255,0.6)",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background =
-                                "rgba(255,255,255,0.1)";
-                              if (!menuOpen)
-                                e.currentTarget.style.color = "#ffffff";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = "transparent";
-                              e.currentTarget.style.color = menuOpen
-                                ? "#d4a574"
-                                : "rgba(255,255,255,0.6)";
-                            }}
-                            aria-label="Conversation options"
-                          >
-                            <MoreVertical size={12} />
-                          </button>
-                        </div>
-
-                        {/* Expandable actions */}
-                        <AnimatePresence>
-                          {menuOpen && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.15 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="px-2 pb-2">
-                                {isRenaming ? (
-                                  <div
-                                    className="flex items-center gap-1.5 rounded-lg px-2 py-1.5"
-                                    style={{
-                                      background: "rgba(255,255,255,0.05)",
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <input
-                                      autoFocus
-                                      value={renameValue ?? ""}
-                                      onChange={(e) =>
-                                        setRenameValue(e.target.value)
-                                      }
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter")
-                                          saveRename(c.id);
-                                        if (e.key === "Escape") {
-                                          setRenamingId(null);
-                                          setMenuOpenId(null);
-                                        }
-                                      }}
-                                      onBlur={() => {
-                                        // Only save if we are still the active rename target.
-                                        // renamingId is null by the time AnimatePresence unmounts
-                                        // the input after a cancel/outside-click, so this guard
-                                        // prevents the spurious save that was corrupting titles
-                                        // on production (where conversations are persisted).
-                                        if (renamingId === c.id) saveRename(c.id);
-                                      }}
-                                      className="flex-1 min-w-0 bg-transparent text-xs text-white outline-none"
-                                      style={{
-                                        borderBottom:
-                                          "1px solid rgba(212,165,116,0.5)",
-                                        paddingBottom: "2px",
-                                      }}
-                                    />
-                                    <button
-                                      onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        saveRename(c.id);
-                                      }}
-                                      className="grid place-items-center size-5 rounded shrink-0"
-                                      style={{ color: "#d4a574" }}
-                                      aria-label="Save rename"
-                                    >
-                                      <Check size={11} />
-                                    </button>
-                                    <button
-                                      onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        setRenamingId(null);
-                                        setMenuOpenId(null);
-                                      }}
-                                      className="grid place-items-center size-5 rounded shrink-0"
-                                      style={{
-                                        color: "rgba(255,255,255,0.4)",
-                                      }}
-                                      aria-label="Cancel rename"
-                                    >
-                                      <X size={11} />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div
-                                    className="flex gap-1.5"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <button
-                                      onClick={() => {
-                                        setRenameValue(c.title ?? "");
-                                        setRenamingId(c.id);
-                                      }}
-                                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs transition-colors"
-                                      style={{
-                                        color: "rgba(255,255,255,0.65)",
-                                        background: "rgba(255,255,255,0.06)",
-                                        border:
-                                          "1px solid rgba(255,255,255,0.08)",
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.color = "#ffffff";
-                                        e.currentTarget.style.background =
-                                          "rgba(255,255,255,0.1)";
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.color =
-                                          "rgba(255,255,255,0.65)";
-                                        e.currentTarget.style.background =
-                                          "rgba(255,255,255,0.06)";
-                                      }}
-                                    >
-                                      <Pencil size={11} />
-                                      Rename
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        deleteConversation(c.id);
-                                        setMenuOpenId(null);
-                                      }}
-                                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs transition-colors"
-                                      style={{
-                                        color: "rgba(239,68,68,0.75)",
-                                        background: "rgba(239,68,68,0.06)",
-                                        border:
-                                          "1px solid rgba(239,68,68,0.12)",
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.color = "#ef4444";
-                                        e.currentTarget.style.background =
-                                          "rgba(239,68,68,0.14)";
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.color =
-                                          "rgba(239,68,68,0.75)";
-                                        e.currentTarget.style.background =
-                                          "rgba(239,68,68,0.06)";
-                                      }}
-                                    >
-                                      <Trash2 size={11} />
-                                      Delete
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </motion.li>
-                  );
-                })}
+                {conversations.slice(0, 12).map((c) => (
+                  <motion.li
+                    key={c.id}
+                    layout
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <ConversationRow
+                      conversation={c}
+                      isActive={c.id === activeId}
+                      menuOpen={menuOpenId === c.id}
+                      isRenaming={renamingId === c.id}
+                      onActivate={handleActivate}
+                      onMenuToggle={handleMenuToggle}
+                      onRenameStart={handleRenameStart}
+                      onSave={handleSave}
+                      onCancel={handleCancel}
+                      onDelete={handleDelete}
+                    />
+                  </motion.li>
+                ))}
               </AnimatePresence>
             )}
           </ul>
