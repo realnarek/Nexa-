@@ -246,6 +246,15 @@
     overscroll-behavior: contain;
   }
 
+  /* Visually hide scrollbar track while keeping overflow scrollable */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Safe text wrapping — prevents long unbroken strings (URLs, JSON, errors)
      from overflowing their container and breaking the horizontal layout. */
   .text-overflow-safe {

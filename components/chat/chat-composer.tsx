@@ -6,6 +6,13 @@ import { ArrowUp, Mic, Plus, Square } from "lucide-react";
 import { useChatStore } from "@/store/chat-store";
 import { cn } from "@/lib/utils";
 
+// Max composer height before internal scrolling activates (px)
+const MAX_HEIGHT = 160;
+
+// Run synchronously before paint on client; fall back to useEffect during SSR
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
+
 interface ChatComposerProps {
   autoFocus?: boolean;
 }
@@ -20,13 +27,25 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
   const busy = status !== "idle" && status !== "error";
   const hasText = value.trim().length > 0;
 
-  // Auto-resize: single line by default, grows upward
-  React.useEffect(() => {
+  // Stable auto-resize without the "height: auto" bounce.
+  // Setting height to 0 before reading scrollHeight gives an accurate
+  // content measurement without triggering an intermediate paint at "auto" size.
+  // overflowY is kept hidden while growing so no scrollbar flicker occurs;
+  // it switches to "auto" only after the content exceeds MAX_HEIGHT.
+  const resize = React.useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 180) + "px";
-  }, [value]);
+    el.style.height = "0px";
+    const scrollH = el.scrollHeight;
+    el.style.height = `${Math.min(scrollH, MAX_HEIGHT)}px`;
+    el.style.overflowY = scrollH > MAX_HEIGHT ? "auto" : "hidden";
+  }, []);
+
+  // useLayoutEffect fires before the browser paints so height and value
+  // update in the same frame — prevents the one-frame height-lag flash.
+  useIsomorphicLayoutEffect(() => {
+    resize();
+  }, [value, resize]);
 
   // Focus on mount / seed prompt
   React.useEffect(() => {
@@ -47,8 +66,11 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
     const text = value.trim();
     if (!text || busy) return;
     setValue("");
-    // Reset height
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = "36px";
+      el.style.overflowY = "hidden";
+    }
     await sendMessage(text);
   };
 
@@ -72,7 +94,6 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
       <div className="max-w-3xl mx-auto">
         {/* Floating glass dock */}
         <motion.div
-          layout
           className={cn(
             "relative flex items-end gap-0.5 px-1.5 py-1",
             "rounded-[26px]",
@@ -112,7 +133,12 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={onKeyDown}
             onCompositionStart={() => { isComposing.current = true; }}
-            onCompositionEnd={() => { isComposing.current = false; }}
+            onCompositionEnd={() => {
+              isComposing.current = false;
+              // Re-measure after IME commits characters — composition may not
+              // fire onChange, so the resize effect won't run automatically.
+              resize();
+            }}
             placeholder={busy ? "Agent is working…" : "Ask Nexa anything..."}
             disabled={busy}
             rows={1}
@@ -123,11 +149,20 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
             className={cn(
               "flex-1 bg-transparent border-0 resize-none outline-none ring-0",
               "text-[15px] leading-[1.45] py-[7px] px-1",
-              "min-h-[36px] max-h-[180px]",
               "placeholder:text-muted-foreground/40 text-foreground",
               "disabled:opacity-40 disabled:cursor-default",
-              "scrollbar-none",
+              // scroll-touch: -webkit-overflow-scrolling + overscroll-behavior:contain
+              // scrollbar-none: hides the scrollbar track when overflow activates
+              "scrollbar-none scroll-touch",
             )}
+            style={{
+              minHeight: "36px",
+              maxHeight: `${MAX_HEIGHT}px`,
+              height: "36px",
+              overflowY: "hidden",
+              // pan-y: browser handles vertical touch-scroll, won't hand off to parent
+              touchAction: "pan-y",
+            }}
           />
 
           {/* Mic button — hidden while busy */}
