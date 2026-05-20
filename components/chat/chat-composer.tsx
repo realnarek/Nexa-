@@ -84,16 +84,14 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
           style={{
             boxShadow: busy
               ? [
-                  "inset 0 1px 0 hsl(0 0% 100% / 0.13)",
-                  "0 0 0 0.5px hsl(28 100% 64% / 0.14)",
-                  "0 0 28px -4px hsl(28 100% 64% / 0.07)",
-                  "0 6px 28px -6px hsl(0 0% 0% / 0.48)",
+                  "inset 0 1px 0 hsl(0 0% 100% / 0.10)",
+                  "0 0 0 0.5px hsl(28 100% 64% / 0.12)",
+                  "0 4px 12px -4px hsl(0 0% 0% / 0.22)",
                 ].join(", ")
               : [
-                  "inset 0 1px 0 hsl(0 0% 100% / 0.13)",
-                  "0 0 0 0.5px hsl(0 0% 100% / 0.07)",
-                  "0 0 28px -4px hsl(0 0% 100% / 0.03)",
-                  "0 6px 28px -6px hsl(0 0% 0% / 0.48)",
+                  "inset 0 1px 0 hsl(0 0% 100% / 0.10)",
+                  "0 0 0 0.5px hsl(0 0% 100% / 0.06)",
+                  "0 4px 12px -4px hsl(0 0% 0% / 0.22)",
                 ].join(", "),
           }}
         >

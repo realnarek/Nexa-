@@ -121,7 +121,7 @@ export default function WorkflowsPage() {
                   </button>
 
                   {expanded && (
-                    <div className="border-t border-border bg-background/40 px-4 py-4 space-y-4">
+                    <div className="border-t border-border/30 bg-muted/20 px-4 py-4 space-y-4">
                       <div>
                         <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
                           Original request
