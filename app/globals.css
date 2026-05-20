@@ -67,6 +67,8 @@
     font-feature-settings: "cv11", "ss01", "ss03";
     /* Prevent elastic overscroll at the page level */
     overscroll-behavior: none;
+    /* Suppress double-tap zoom; allows panning and pinch-zoom gestures */
+    touch-action: manipulation;
   }
   body {
     text-rendering: optimizeLegibility;
