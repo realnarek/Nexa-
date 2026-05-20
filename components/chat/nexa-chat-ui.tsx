@@ -542,7 +542,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
           transitionDuration: "250ms",
           transitionTimingFunction: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
           willChange: "transform",
-          boxShadow: "4px 0 32px rgba(0,0,0,0.55)",
+          boxShadow: "none",
         }}
       >
         {/* Header */}
@@ -907,7 +907,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
             <div
               className="shrink-0 px-3 pt-3"
               style={{
-                background: "linear-gradient(to top, #0a0e27 80%, transparent)",
+                background: "linear-gradient(to top, #0a0e27 60%, transparent)",
                 borderTop: "1px solid rgba(255,255,255,0.06)",
                 paddingBottom: "max(12px, env(safe-area-inset-bottom))",
               }}

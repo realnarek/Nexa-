@@ -56,7 +56,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             className={cn(
               "max-w-2xl text-overflow-safe",
               isUser
-                ? "rounded-2xl rounded-tr-md bg-secondary/60 border border-border/60 px-3.5 py-2 md:px-4 md:py-2.5 text-[15px] leading-relaxed"
+                ? "rounded-2xl rounded-tr-md bg-secondary border border-border/50 px-3.5 py-2 md:px-4 md:py-2.5 text-[15px] leading-relaxed"
                 : "text-[15px] leading-relaxed text-foreground/90",
             )}
           >

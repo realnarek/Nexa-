@@ -63,11 +63,7 @@ function AndroidBanner({ onInstall, onDismiss }: AndroidBannerProps) {
       className="fixed bottom-0 left-0 right-0 z-50 p-3 pb-safe pointer-events-none"
     >
       <div
-        className="pointer-events-auto mx-auto max-w-sm rounded-2xl border border-white/[0.08] bg-[hsl(0_0%_9%)] shadow-2xl shadow-black/60"
-        style={{
-          backgroundImage:
-            "linear-gradient(180deg, hsl(0 0% 100% / 0.025) 0%, transparent 100%)",
-        }}
+        className="pointer-events-auto mx-auto max-w-sm rounded-2xl border border-white/[0.08] bg-[hsl(0_0%_9%)] shadow-lg shadow-black/30"
       >
         <div className="flex items-center gap-3 p-3.5">
           {/* Icon */}
@@ -149,10 +145,6 @@ function IOSSheet({ onDismiss }: IOSSheetProps) {
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 32, stiffness: 380 }}
         className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-white/[0.08] bg-[hsl(0_0%_8%)] pb-safe"
-        style={{
-          backgroundImage:
-            "linear-gradient(180deg, hsl(0 0% 100% / 0.03) 0%, transparent 60px)",
-        }}
       >
         {/* Drag handle */}
         <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-[hsl(0_0%_20%)]" />

@@ -158,9 +158,9 @@ export function ToolExecutionCard({ call }: ToolExecutionCardProps) {
       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
         "rounded-xl overflow-hidden",
-        "border bg-card/70 backdrop-blur-sm",
+        "border bg-card backdrop-blur-sm",
         running &&
-          "border-primary/25 shadow-[0_0_0_1px_hsl(var(--primary)/0.06)_inset] animate-border-glow",
+          "border-primary/25 animate-border-glow",
         ok && "border-border/70",
         failed && "border-red-500/25",
       )}
@@ -227,7 +227,7 @@ export function ToolExecutionCard({ call }: ToolExecutionCardProps) {
           >
             <div
               className={cn(
-                "border-t border-border/40 bg-background/40",
+                "border-t border-border/30 bg-muted/20",
                 "px-3 py-3 md:px-3.5 md:py-3.5 space-y-3",
               )}
             >
