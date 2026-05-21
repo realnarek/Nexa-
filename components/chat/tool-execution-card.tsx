@@ -270,7 +270,7 @@ function WebSearchDetails({ call }: { call: ToolCall }) {
       {/* Query */}
       <div>
         <SectionLabel icon={Search} label="Query" />
-        <div className="mt-1 text-[12px] font-medium text-foreground/80 bg-accent/20 rounded-lg px-2.5 py-1.5 border border-border/30 leading-relaxed">
+        <div className="mt-1 text-[12px] font-medium text-foreground/80 bg-accent/20 rounded-lg px-2.5 py-1.5 border border-border/30 leading-relaxed select-text">
           {input.query ?? output?.query ?? "—"}
         </div>
       </div>
@@ -363,7 +363,7 @@ function SectionLabel({
 
 function CodeBlock({ content }: { content: string }) {
   return (
-    <pre className="mt-1 font-mono text-[11px] text-foreground/65 overflow-x-auto scrollbar-thin whitespace-pre-wrap break-all bg-accent/10 rounded-lg p-2.5 border border-border/25 leading-relaxed">
+    <pre className="mt-1 font-mono text-[11px] text-foreground/65 overflow-x-auto scrollbar-thin whitespace-pre-wrap break-all bg-accent/10 rounded-lg p-2.5 border border-border/25 leading-relaxed select-text">
       {content}
     </pre>
   );
@@ -404,7 +404,7 @@ function SourceCard({
         {initial}
       </div>
 
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 select-text">
         <div className="text-[12px] font-medium text-foreground/80 truncate group-hover:text-foreground transition-colors leading-snug">
           {result.title}
         </div>
@@ -429,7 +429,7 @@ function LogsSection({ logs }: { logs: ToolCall["logs"] }) {
       <SectionLabel icon={Terminal} label="Logs" />
       <div className="mt-1 space-y-px rounded-lg border border-border/25 bg-background/30 p-2 font-mono text-[10px]">
         {logs.map((log, i) => (
-          <div key={i} className="flex items-start gap-2">
+          <div key={i} className="flex items-start gap-2 select-text">
             <span className="text-muted-foreground/35 shrink-0 tabular-nums pt-px">
               {new Date(log.ts).toLocaleTimeString("en-US", { hour12: false })}
             </span>
@@ -463,7 +463,7 @@ function ErrorBlock({ error }: { error: string }) {
           Error
         </span>
       </div>
-      <div className="font-mono text-[11px] text-red-200/75 leading-relaxed">
+      <div className="font-mono text-[11px] text-red-200/75 leading-relaxed select-text">
         {error}
       </div>
     </div>

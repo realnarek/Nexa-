@@ -52,21 +52,25 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
         {/* Text content */}
         {shouldRenderContent && (
+          /* bubble-shell: layout container — must not be selectable */
           <div
             className={cn(
-              "max-w-2xl text-overflow-safe select-contain",
+              "max-w-2xl text-overflow-safe select-none",
               isUser
                 ? "rounded-2xl rounded-tr-md bg-secondary border border-border/50 px-3.5 py-2 md:px-4 md:py-2.5 text-[15px] leading-relaxed"
                 : "text-[15px] leading-relaxed text-foreground/90",
             )}
           >
             {renderedContent ? (
-              <MarkdownLite content={renderedContent} revealFrom={revealFrom} />
+              /* message-text: the ONLY selectable island in this bubble */
+              <div className="message-text">
+                <MarkdownLite content={renderedContent} revealFrom={revealFrom} />
+              </div>
             ) : (
               <TypingIndicator />
             )}
             {message.streaming && !isUser && renderedContent && (
-              <span className="caret" aria-hidden />
+              <span className="caret select-none" aria-hidden />
             )}
           </div>
         )}

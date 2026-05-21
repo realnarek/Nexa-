@@ -75,6 +75,12 @@
        any document-level scroll creates a visual gap between the keyboard
        and the composer on Android Chrome. */
     overflow: hidden;
+    /* Global selection lock: all UI chrome is non-selectable by default.
+       Only nodes with .message-text (user-select: text) punch through this
+       lock. This prevents sidebar, topbar, flex containers, and scroll
+       containers from ever being included in a text selection. */
+    -webkit-user-select: none;
+    user-select: none;
   }
   body {
     text-rendering: optimizeLegibility;
@@ -269,13 +275,19 @@
     min-width: 0;
   }
 
-  /* Isolate text selection to a single element.
-     user-select:contain means selection cannot cross this element's boundary —
-     "Select All" will only select content within this node.
-     This prevents the Android long-press "Select All" from leaking across
-     sibling message bubbles. The -webkit- prefix covers pre-84 Chrome/Android. */
-  .select-contain {
-    -webkit-user-select: contain;
-    user-select: contain;
+  /* The ONLY nodes the browser may select within.
+     Applied to the innermost text-content element inside each message bubble
+     (never on layout containers, flex wrappers, or scroll regions).
+     display:inline-block + width:fit-content makes the browser treat each
+     message as an isolated inline text island — selection can start and end
+     within this element without bleeding into surrounding UI chrome.
+     -webkit-user-select:text overrides the global -webkit-user-select:none
+     set on html/body; user-select:text does the same for other engines. */
+  .message-text {
+    -webkit-user-select: text;
+    user-select: text;
+    display: inline-block;
+    width: fit-content;
+    max-width: 100%;
   }
 }
