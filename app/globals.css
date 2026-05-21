@@ -269,13 +269,12 @@
     min-width: 0;
   }
 
-  /* Isolate text selection to a single element.
-     user-select:contain means selection cannot cross this element's boundary —
-     "Select All" will only select content within this node.
-     This prevents the Android long-press "Select All" from leaking across
-     sibling message bubbles. The -webkit- prefix covers pre-84 Chrome/Android. */
+  /* user-select:contain was removed in Chrome 84+ and behaves incorrectly on
+     modern Android — it can cause the entire container to be selected as a
+     single block unit, producing oversized selection rectangles and jagged
+     right-side highlights. Use 'text' so selection follows inline text rects. */
   .select-contain {
-    -webkit-user-select: contain;
-    user-select: contain;
+    -webkit-user-select: text;
+    user-select: text;
   }
 }

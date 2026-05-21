@@ -120,7 +120,7 @@ function MarkdownLite({
           );
         }
         return (
-          <p key={i}>{renderInline(line, currentLineStart, revealFrom)}</p>
+          <p key={i} className="w-fit max-w-full">{renderInline(line, currentLineStart, revealFrom)}</p>
         );
       })}
     </div>
