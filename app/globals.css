@@ -275,6 +275,19 @@
     min-width: 0;
   }
 
+  /* Each message row is a hard selection boundary.
+     contain:layout paint establishes a separate block formatting context so
+     the browser cannot extend a "Select all" gesture past this element's
+     edge into an adjacent message. isolation:isolate creates a new stacking
+     context as an additional layer of separation. Without these, Android
+     Chrome merges adjacent inline-block message-text islands into one
+     contiguous selection region when "Select all" is invoked. */
+  .message-row {
+    contain: layout paint;
+    isolation: isolate;
+    position: relative;
+  }
+
   /* The ONLY nodes the browser may select within.
      Applied to the innermost text-content element inside each message bubble
      (never on layout containers, flex wrappers, or scroll regions).

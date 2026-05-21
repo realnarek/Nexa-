@@ -123,7 +123,7 @@ function DemoMessageBubble({ msg }: { msg: DemoMessage }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "flex",
+        "message-row flex",
         isUser ? "justify-end" : "justify-start",
       )}
     >
