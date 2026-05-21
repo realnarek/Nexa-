@@ -30,7 +30,7 @@ export function TopBar({ title, subtitle, right }: TopBarProps) {
 
   return (
     <header
-      className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/80 backdrop-blur-xl px-3 md:px-6"
+      className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/80 backdrop-blur-xl px-3 md:px-6 select-none"
       style={{
         minHeight: "3.5rem",
         paddingTop: "max(0px, env(safe-area-inset-top))",

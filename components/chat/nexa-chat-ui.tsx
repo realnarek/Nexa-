@@ -96,7 +96,7 @@ function nanoid() {
 
 function AssistantContent({ text }: { text: string }) {
   return (
-    <div className="space-y-2 text-sm leading-relaxed text-[#e8e8e8]">
+    <div className="message-text space-y-2 text-sm leading-relaxed text-[#e8e8e8]">
       {text.split("\n\n").map((para, i) => {
         if (!para.trim()) return null;
         const rendered = para.replace(
@@ -127,22 +127,24 @@ function DemoMessageBubble({ msg }: { msg: DemoMessage }) {
         isUser ? "justify-end" : "justify-start",
       )}
     >
+      {/* bubble-shell: layout container — must not be selectable */}
       <div
         className={cn(
-          "max-w-[78%] rounded-2xl px-4 py-3",
+          "max-w-[78%] rounded-2xl px-4 py-3 select-none",
           isUser
             ? "bg-[#1e2a4a] border border-[rgba(255,255,255,0.1)] text-white text-sm leading-relaxed rounded-tr-md"
             : "bg-transparent",
         )}
       >
         {isUser ? (
-          <p className="text-sm leading-relaxed">{msg.content}</p>
+          /* message-text: the ONLY selectable island */
+          <p className="message-text text-sm leading-relaxed">{msg.content}</p>
         ) : (
           <AssistantContent text={msg.content} />
         )}
         <p
           className={cn(
-            "text-[10px] mt-2 font-mono",
+            "text-[10px] mt-2 font-mono select-none",
             isUser
               ? "text-right text-[rgba(255,255,255,0.4)]"
               : "text-[rgba(255,255,255,0.3)]",
@@ -498,7 +500,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
 
   return (
     <div
-      className="flex w-full overflow-hidden"
+      className="flex w-full overflow-hidden select-none"
       style={{
         // Use the visual-viewport height instead of 100dvh / h-dvh.
         // On Android, dvh reflects the layout viewport which stays stale when
@@ -529,7 +531,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
       {/* ── Sidebar ── */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex flex-col",
+          "fixed inset-y-0 left-0 z-40 flex flex-col select-none",
           "w-[280px] max-w-[85vw]",
           "transition-transform duration-250",
           "md:relative md:z-auto md:w-[280px] md:max-w-none md:shrink-0 md:translate-x-0 md:flex",

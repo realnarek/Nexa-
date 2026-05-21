@@ -85,10 +85,10 @@ export default function ChatPage() {
         {/* Message area — always rendered so layout is stable */}
         <div
           ref={scrollerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-thin flex flex-col"
+          className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-thin flex flex-col select-none"
         >
           {hasMessages ? (
-            <div className="max-w-3xl mx-auto w-full px-3 md:px-6 py-3 md:py-4">
+            <div className="max-w-3xl mx-auto w-full px-3 md:px-6 py-3 md:py-4 select-none">
               {messages.map((m) => (
                 <MessageBubble key={m.id} message={m} />
               ))}
