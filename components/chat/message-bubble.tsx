@@ -33,7 +33,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="group flex py-3 md:py-5"
+      className="group flex py-3 md:py-5 select-none"
     >
       <div
         className={cn(
@@ -54,7 +54,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         {shouldRenderContent && (
           <div
             className={cn(
-              "max-w-2xl text-overflow-safe",
+              "max-w-2xl text-overflow-safe select-contain",
               isUser
                 ? "rounded-2xl rounded-tr-md bg-secondary border border-border/50 px-3.5 py-2 md:px-4 md:py-2.5 text-[15px] leading-relaxed"
                 : "text-[15px] leading-relaxed text-foreground/90",
