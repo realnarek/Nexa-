@@ -33,7 +33,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="group flex py-3 md:py-5"
+      className="message-row group flex py-3 md:py-5"
     >
       <div
         className={cn(
