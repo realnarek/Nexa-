@@ -22,6 +22,12 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  // Android Chrome 108+: resize the layout viewport when the software keyboard
+  // opens instead of overlaying it.  This eliminates the keyboard-overlay layout
+  // shift and prevents the visual viewport from panning during touch gestures
+  // inside the composer.  Falls back to "overlays-content" on older browsers
+  // where the useVisualViewport hook compensates via --vvh / --keyboard-inset.
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
     { media: "(prefers-color-scheme: light)", color: "#0a0a0a" },

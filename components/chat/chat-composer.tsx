@@ -113,14 +113,59 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
     }
   };
 
+  // Outer wrapper ref — used for the native touchmove listener that blocks
+  // visual-viewport panning.  Any pan gesture that starts inside the composer
+  // area must not propagate to the layout viewport; we prevent default on the
+  // wrapper's touchmove so the browser cannot pan the page while the user is
+  // interacting with the dock or the textarea.
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const blockPan = (e: TouchEvent) => {
+      // Allow the textarea to scroll its own content when it is genuinely
+      // overflowing (multiline mode).  All other touch-move events inside the
+      // composer — including single-line textarea drags, button areas, and
+      // dock padding — are cancelled so they cannot pan the layout viewport.
+      const ta = textareaRef.current;
+      if (ta && ta.scrollHeight > ta.clientHeight) {
+        let node: Node | null = e.target as Node;
+        while (node) {
+          if (node === ta) return; // let browser handle internal textarea scroll
+          node = node.parentNode;
+        }
+      }
+      if (e.cancelable) e.preventDefault();
+    };
+
+    // passive: false is required to call preventDefault() on touch events.
+    wrapper.addEventListener("touchmove", blockPan, { passive: false });
+    return () => wrapper.removeEventListener("touchmove", blockPan);
+  }, []);
+
   return (
+    // No touch-action override here — the native touchmove listener (above)
+    // selectively calls preventDefault() to block viewport panning while still
+    // allowing the textarea to scroll its own overflow.  CSS touch-action uses
+    // ancestor intersection rules, so setting "none" here would cancel the
+    // textarea's "pan-y" value and prevent internal scrolling entirely.
     <div
+      ref={wrapperRef}
       className="px-3 md:px-4 pt-1.5 shrink-0"
       style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
     >
       <div className="max-w-3xl mx-auto">
-        {/* Floating glass dock */}
-        <motion.div
+        {/* Floating glass dock — plain div, no motion wrapper.
+            Using motion.div here (even without animation props) causes
+            framer-motion to apply inline transform styles that promote the
+            element to a GPU compositor layer.  On Android Chrome, compositor-
+            promoted elements can detach from the layout during visual-viewport
+            transitions and scroll events, producing the visible gap between
+            the dock and the keyboard.  A plain div with identical CSS avoids
+            this compositor isolation entirely. */}
+        <div
           className={cn(
             "relative flex items-end gap-0.5 px-1.5 py-1",
             "rounded-[26px]",
@@ -252,7 +297,7 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
               />
             </button>
           )}
-        </motion.div>
+        </div>
       </div>
     </div>
   );

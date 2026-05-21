@@ -54,21 +54,40 @@ export function useVisualViewport(): void {
     const vv = window.visualViewport;
     let rafId = 0;
 
+    // RAF-batched update for smooth tracking during keyboard slide animation.
     const schedule = (): void => {
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(syncViewport);
+    };
+
+    // Immediate (synchronous) update — used for events where we need --vvh to
+    // be accurate BEFORE the next paint.  Specifically: when a touch begins or
+    // ends, the visual viewport must already be correct so that any touch-driven
+    // layout change (textarea focus, IME resize) does not see a stale value.
+    const syncNow = (): void => {
+      cancelAnimationFrame(rafId);
+      syncViewport();
     };
 
     if (vv) {
       // visualViewport fires at every animation frame during keyboard slide.
       vv.addEventListener("resize", schedule);
       // scroll fires when the browser shifts the viewport to reveal the focused
-      // input (offsetTop changes).
-      vv.addEventListener("scroll", schedule);
+      // input (offsetTop changes) — sync immediately to avoid the one-frame lag
+      // that would create a visible gap between keyboard and composer.
+      vv.addEventListener("scroll", syncNow);
     } else {
       // Older browsers / desktop: use window resize as a fallback.
       window.addEventListener("resize", schedule);
     }
+
+    // touchstart: ensure --vvh is current the instant a finger makes contact.
+    // This guarantees the layout is correct at the start of any drag gesture.
+    document.addEventListener("touchstart", syncNow, { passive: true });
+
+    // touchend: re-sync after the touch is released so any residual viewport
+    // offset (e.g. pan that occurred during the gesture) is corrected.
+    document.addEventListener("touchend", schedule, { passive: true });
 
     // visibilitychange fires when the user alt-tabs back to the PWA / WebView.
     // At that point the visualViewport may have stale dimensions because Android
@@ -90,10 +109,12 @@ export function useVisualViewport(): void {
     return () => {
       if (vv) {
         vv.removeEventListener("resize", schedule);
-        vv.removeEventListener("scroll", schedule);
+        vv.removeEventListener("scroll", syncNow);
       } else {
         window.removeEventListener("resize", schedule);
       }
+      document.removeEventListener("touchstart", syncNow);
+      document.removeEventListener("touchend", schedule);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("focus", schedule);
       cancelAnimationFrame(rafId);

@@ -69,6 +69,12 @@
     overscroll-behavior: none;
     /* Suppress double-tap zoom; allows panning and pinch-zoom gestures */
     touch-action: manipulation;
+    /* Lock the document so the layout viewport cannot scroll/pan.
+       Scrollable regions within the app (message list, sidebar) have their
+       own overflow containers; the root document must never scroll because
+       any document-level scroll creates a visual gap between the keyboard
+       and the composer on Android Chrome. */
+    overflow: hidden;
   }
   body {
     text-rendering: optimizeLegibility;
