@@ -6,8 +6,15 @@ import { ArrowUp, Mic, Plus, Square } from "lucide-react";
 import { useChatStore } from "@/store/chat-store";
 import { cn } from "@/lib/utils";
 
-// Max composer height before internal scrolling activates (px)
-const MAX_HEIGHT = 160;
+// Allow ~11 natural lines before internal scrolling starts.
+// At 15px / 1.45 line-height ≈ 21.75px per line; 240px ≈ 11 lines.
+// Increasing from 160px prevents scroll mode from activating too early,
+// giving a comfortable editing space for long messages on mobile.
+const MAX_HEIGHT = 240;
+
+// Bottom padding inside the textarea scroll box so the caret and last
+// line never clip against the lower edge of the scroll container.
+const CARET_SAFE_PADDING_BOTTOM = 10;
 
 // Run synchronously before paint on client; fall back to useEffect during SSR
 const useIsomorphicLayoutEffect =
@@ -32,13 +39,33 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
   // content measurement without triggering an intermediate paint at "auto" size.
   // overflowY is kept hidden while growing so no scrollbar flicker occurs;
   // it switches to "auto" only after the content exceeds MAX_HEIGHT.
+  //
+  // Android stability: we capture scrollTop before collapsing the height,
+  // then restore it after resize. Without this, Android resets scrollTop to 0
+  // during the height=0 measurement phase, causing caret and selection handles
+  // to visually jump or drift.
   const resize = React.useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
+
+    // Snapshot scroll state before any DOM mutation.
+    const savedScrollTop = el.scrollTop;
+    const wasOverflowing = el.style.overflowY === "auto";
+
     el.style.height = "0px";
     const scrollH = el.scrollHeight;
+    const overflowing = scrollH > MAX_HEIGHT;
+
     el.style.height = `${Math.min(scrollH, MAX_HEIGHT)}px`;
-    el.style.overflowY = scrollH > MAX_HEIGHT ? "auto" : "hidden";
+    el.style.overflowY = overflowing ? "auto" : "hidden";
+
+    // Restore scroll to keep caret anchored and prevent Android selection
+    // handles from drifting after a height change.
+    if (overflowing) {
+      // Already scrolling: stay at the same offset.
+      // Just entered overflow: pin to bottom (caret is at the end).
+      el.scrollTop = wasOverflowing ? savedScrollTop : scrollH;
+    }
   }, []);
 
   // useLayoutEffect fires before the browser paints so height and value
@@ -146,9 +173,12 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
             autoCapitalize="sentences"
             autoComplete="on"
             spellCheck={true}
+            enterKeyHint="send"
             className={cn(
               "flex-1 bg-transparent border-0 resize-none outline-none ring-0",
-              "text-[15px] leading-[1.45] py-[7px] px-1",
+              // pt-[7px] only — bottom padding is controlled via paddingBottom below
+              // so we can guarantee CARET_SAFE_PADDING_BOTTOM is always applied.
+              "text-[15px] leading-[1.45] pt-[7px] px-1",
               "placeholder:text-muted-foreground/40 text-foreground",
               "disabled:opacity-40 disabled:cursor-default",
               // scroll-touch: -webkit-overflow-scrolling + overscroll-behavior:contain
@@ -162,6 +192,13 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
               overflowY: "hidden",
               // pan-y: browser handles vertical touch-scroll, won't hand off to parent
               touchAction: "pan-y",
+              // Ensures the caret and last line are never clipped at the lower
+              // edge of the scroll container on any Android keyboard.
+              paddingBottom: `${CARET_SAFE_PADDING_BOTTOM}px`,
+              // Disables the browser's scroll-anchor algorithm on this element.
+              // Without this, scroll anchoring fights our manual scrollTop
+              // restoration during resize, causing Android handles to drift.
+              overflowAnchor: "none",
             }}
           />
 
