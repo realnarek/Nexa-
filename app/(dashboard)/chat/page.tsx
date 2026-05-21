@@ -88,7 +88,7 @@ export default function ChatPage() {
           className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-thin flex flex-col"
         >
           {hasMessages ? (
-            <div className="max-w-3xl mx-auto w-full px-3 md:px-6 py-3 md:py-4">
+            <div className="max-w-3xl mx-auto w-full px-3 md:px-6 py-3 md:py-4 select-none">
               {messages.map((m) => (
                 <MessageBubble key={m.id} message={m} />
               ))}
