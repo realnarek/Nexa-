@@ -6,6 +6,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/common/theme-provider";
 import { PWAInstall } from "@/components/common/pwa-install";
 import { Toaster } from "sonner";
+import { useSelectAllScope } from "@/hooks/use-select-all-scope";
+
+function SelectAllScopeGuard({ children }: { children: React.ReactNode }) {
+  useSelectAllScope();
+  return <>{children}</>;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
@@ -26,7 +32,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     >
       <QueryClientProvider client={queryClient}>
         <TooltipProvider delayDuration={150}>
-          {children}
+          <SelectAllScopeGuard>
+            {children}
+          </SelectAllScopeGuard>
           <PWAInstall />
           <Toaster
             position="bottom-right"
