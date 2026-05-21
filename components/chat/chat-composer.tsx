@@ -148,7 +148,10 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
             spellCheck={true}
             className={cn(
               "flex-1 bg-transparent border-0 resize-none outline-none ring-0",
-              "text-[15px] leading-[1.45] py-[7px] px-1",
+              // pl-1: tight left gap matches Plus button visual rhythm
+              // pr-4: 16 px right buffer so wrapped lines never enter the mic/send zone
+              // leading-[1.5]: slightly more open than 1.45 for comfortable multiline reading
+              "text-[15px] leading-[1.5] py-[7px] pl-1 pr-4",
               "placeholder:text-muted-foreground/40 text-foreground",
               "disabled:opacity-40 disabled:cursor-default",
               // scroll-touch: -webkit-overflow-scrolling + overscroll-behavior:contain
