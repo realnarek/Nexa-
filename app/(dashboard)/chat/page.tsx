@@ -186,6 +186,19 @@ export default function ChatPage() {
           )}
         </AnimatePresence>
 
+        {/* Cinematic bottom fade — fades scroll content into darkness behind the
+            floating composer. Pointer-events disabled so it never blocks taps.
+            z-9 keeps it above the message list but below the composer (z-10). */}
+        <div
+          className="absolute inset-x-0 bottom-0 pointer-events-none"
+          style={{
+            height: "160px",
+            zIndex: 9,
+            background:
+              "linear-gradient(to bottom, hsl(var(--background) / 0) 0%, hsl(var(--background) / 0.28) 30%, hsl(var(--background) / 0.68) 58%, hsl(var(--background) / 0.88) 78%, hsl(var(--background) / 0.97) 100%)",
+          }}
+        />
+
         <ChatComposer autoFocus={!hasMessages} />
       </div>
     </>
