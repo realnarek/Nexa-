@@ -308,14 +308,20 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
   };
 
   return (
-    // Plain div — not motion.div — so framer-motion doesn't promote this
-    // element to a GPU compositor layer. On Android Chrome, compositor-promoted
-    // positioning containers can detach from the layout during visual-viewport
-    // transitions, creating a visible gap between the keyboard and the bar.
+    // Absolutely positioned so the wrapper itself is fully transparent —
+    // only the glass pill elements are visible. The parent must be
+    // position:relative (it is, via the chat page's flex container).
+    // Not motion.div: framer-promoted compositor layers can detach from the
+    // layout on Android Chrome during visual-viewport transitions.
     <div
       ref={wrapperRef}
-      className="px-3 md:px-4 pt-2 shrink-0"
-      style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
+      className="absolute bottom-0 left-0 right-0 px-3 md:px-4 pt-2"
+      style={{
+        paddingBottom: "max(14px, env(safe-area-inset-bottom))",
+        zIndex: 10,
+        // Explicitly transparent — no dark layer behind the pills
+        background: "transparent",
+      }}
     >
       <div className="max-w-3xl mx-auto">
         {/*

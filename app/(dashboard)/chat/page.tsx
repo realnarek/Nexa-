@@ -80,9 +80,12 @@ export default function ChatPage() {
         }
       />
 
-      {/* relative so the floating button can be absolutely positioned within */}
+      {/* relative container — ChatComposer floats absolutely inside here */}
       <div className="flex-1 flex flex-col min-h-0 relative">
-        {/* Message area — always rendered so layout is stable */}
+        {/* Message area — fills all available space; content is padded at the
+            bottom so the last message is never hidden behind the floating
+            composer. The scroller extends to the full container height so chat
+            content is visible through the transparent composer wrapper. */}
         <div
           ref={scrollerRef}
           className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-thin flex flex-col select-none"
@@ -92,7 +95,9 @@ export default function ChatPage() {
               {messages.map((m) => (
                 <MessageBubble key={m.id} message={m} />
               ))}
-              <div className="h-4" />
+              {/* Reserve space for the floating composer so the last message
+                  is not hidden behind it */}
+              <div className="h-[88px]" />
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center px-4">
@@ -139,7 +144,9 @@ export default function ChatPage() {
           )}
         </AnimatePresence>
 
-        {/* Suggestion chips — visible above composer when conversation is empty */}
+        {/* Suggestion chips — visible above composer when conversation is empty.
+            pb-[88px] reserves space for the absolutely-positioned floating
+            composer so chips are never overlapped by it. */}
         <AnimatePresence>
           {!hasMessages && (
             <motion.div
@@ -148,7 +155,7 @@ export default function ChatPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
               transition={{ duration: 0.25 }}
-              className="px-3 md:px-6 pb-2"
+              className="px-3 md:px-6 pb-[88px]"
             >
               <div className="max-w-3xl mx-auto grid grid-cols-2 gap-2">
                 {SUGGESTIONS.map((s, i) => {
