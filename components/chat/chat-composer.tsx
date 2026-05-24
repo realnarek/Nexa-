@@ -24,6 +24,8 @@ const useIsomorphicLayoutEffect =
 
 const spring = { type: "spring" as const, stiffness: 520, damping: 30, mass: 0.85 };
 const springSnap = { type: "spring" as const, stiffness: 600, damping: 26, mass: 0.7 };
+// Spring used for focus/blur expand-collapse of the plus-button slot
+const springFocus = { type: "spring" as const, stiffness: 380, damping: 28, mass: 0.8 };
 
 const glassBase: React.CSSProperties = {
   background: "rgba(20, 20, 20, 0.72)",
@@ -42,16 +44,19 @@ const glassBase: React.CSSProperties = {
 // ─────────────────────────────────────────────────────────────────────────────
 const PlusButton = React.memo(function PlusButton({
   disabled,
+  focused,
 }: {
   disabled: boolean;
+  focused: boolean;
 }) {
   return (
     <motion.button
       type="button"
       disabled={disabled}
       aria-label="Attach"
+      animate={{ x: focused ? -56 : 0 }}
       whileTap={{ scale: 0.82 }}
-      transition={spring}
+      transition={springFocus}
       className={cn(
         "shrink-0 flex items-center justify-center",
         "size-12 rounded-full",
@@ -329,8 +334,23 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
           the pill's bottom-right without escaping the max-width container.
           `items-end` keeps Plus button and pill bottom-aligned as pill grows.
         */}
-        <div className="flex items-end gap-3 relative">
-          <PlusButton disabled={busy} />
+        <div className="flex items-end relative">
+          {/*
+            Animated slot: collapses width + margin on focus so the pill
+            gains real layout space, while the button slides left via translateX.
+          */}
+          <motion.div
+            className="shrink-0 overflow-hidden flex items-end"
+            animate={{
+              width: focused ? 0 : 48,
+              marginRight: focused ? 0 : 12,
+              opacity: focused ? 0 : 1,
+            }}
+            transition={springFocus}
+            aria-hidden={focused}
+          >
+            <PlusButton disabled={busy} focused={focused} />
+          </motion.div>
 
           {/* Pill — full visual width; button floats above its right edge */}
           <div className="flex-1" style={pillStyle}>
