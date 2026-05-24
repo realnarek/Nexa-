@@ -18,18 +18,18 @@ const BUTTON_SIZE = 36;
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
 
-const spring = { type: "spring" as const, stiffness: 420, damping: 32, mass: 0.75 };
+const spring = { type: "spring" as const, stiffness: 380, damping: 34, mass: 0.80 };
 const springSnap = { type: "spring" as const, stiffness: 600, damping: 26, mass: 0.7 };
 
 const glassBase: React.CSSProperties = {
-  background: "rgba(10, 10, 10, 0.72)",
+  background: "rgba(8, 8, 8, 0.78)",
   backdropFilter: "blur(44px)",
   WebkitBackdropFilter: "blur(44px)",
   border: "1px solid rgba(255, 255, 255, 0.08)",
   boxShadow: [
-    "inset 0 1px 0 rgba(255,255,255,0.07)",
-    "0 4px 20px -5px rgba(0,0,0,0.52)",
-    "0 1px 0 rgba(0,0,0,0.28)",
+    "inset 0 1px 0 rgba(255,255,255,0.06)",
+    "0 4px 20px -5px rgba(0,0,0,0.56)",
+    "0 1px 0 rgba(0,0,0,0.32)",
   ].join(", "),
 };
 
@@ -268,23 +268,24 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
   const pillStyle: React.CSSProperties = {
     minHeight: `${MIN_HEIGHT}px`,
     borderRadius: "24px",
-    background: "rgba(10, 10, 10, 0.72)",
+    background: "rgba(8, 8, 8, 0.78)",
     backdropFilter: "blur(44px)",
     WebkitBackdropFilter: "blur(44px)",
     border: focused
-      ? "1px solid rgba(255,255,255,0.13)"
+      ? "1px solid rgba(255,255,255,0.12)"
       : "1px solid rgba(255,255,255,0.08)",
     boxShadow: focused
       ? [
-          "inset 0 1px 0 rgba(255,255,255,0.08)",
-          "0 0 0 2px rgba(255,255,255,0.026)",
-          "0 6px 24px -6px rgba(0,0,0,0.42)",
+          "inset 0 1px 0 rgba(255,255,255,0.07)",
+          "0 0 0 2px rgba(255,255,255,0.022)",
+          "0 6px 28px -6px rgba(0,0,0,0.52)",
         ].join(", ")
       : [
           "inset 0 1px 0 rgba(255,255,255,0.06)",
-          "0 4px 20px -5px rgba(0,0,0,0.36)",
+          "0 4px 20px -5px rgba(0,0,0,0.56)",
+          "0 1px 0 rgba(0,0,0,0.32)",
         ].join(", "),
-    transition: "border-color 200ms ease, box-shadow 200ms ease",
+    transition: "border-color 220ms ease, box-shadow 220ms ease",
     padding: "0 0 0 16px",
   };
 
@@ -309,7 +310,7 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
         */}
         <motion.div
           className="flex items-end relative"
-          animate={{ gap: focused ? "12px" : "5px" }}
+          animate={{ gap: focused ? "10px" : "4px" }}
           transition={spring}
         >
           {/* Fixed-height wrapper keeps the 48px circle bottom-aligned with the pill */}
