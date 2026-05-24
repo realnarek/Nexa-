@@ -329,7 +329,7 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
           the pill's bottom-right without escaping the max-width container.
           `items-end` keeps the pill and FAB bottom-anchored as the pill grows.
         */}
-        <div className="flex items-end gap-3 relative">
+        <div className="flex items-center gap-3 relative">
           {/* Fixed-height wrapper centers the 48px circle within MIN_HEIGHT (56px)
               so its vertical center matches the pill center exactly, in both
               single-line and multiline states. */}
