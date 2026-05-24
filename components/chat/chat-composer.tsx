@@ -327,10 +327,18 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
         {/*
           `relative` on the row lets FloatingActionButton anchor itself to
           the pill's bottom-right without escaping the max-width container.
-          `items-end` keeps Plus button and pill bottom-aligned as pill grows.
+          `items-end` keeps the pill and FAB bottom-anchored as the pill grows.
         */}
         <div className="flex items-end gap-3 relative">
-          <PlusButton disabled={busy} />
+          {/* Fixed-height wrapper centers the 48px circle within MIN_HEIGHT (56px)
+              so its vertical center matches the pill center exactly, in both
+              single-line and multiline states. */}
+          <div
+            className="flex items-center shrink-0"
+            style={{ height: `${MIN_HEIGHT}px` }}
+          >
+            <PlusButton disabled={busy} />
+          </div>
 
           {/* Pill — full visual width; button floats above its right edge */}
           <div className="flex-1" style={pillStyle}>
