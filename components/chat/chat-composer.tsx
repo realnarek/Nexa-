@@ -6,40 +6,34 @@ import { ArrowUp, ChevronDown, Mic, Plus, Square } from "lucide-react";
 import { useChatStore } from "@/store/chat-store";
 import { cn } from "@/lib/utils";
 
-// ~11 natural lines before internal scroll activates
+// Compact Telegram-style proportions
 const MAX_HEIGHT = 240;
-// Baseline single-line height for the pill
-const MIN_HEIGHT = 56;
-// Bottom padding inside the textarea scroll box
-const CARET_BOTTOM_PAD = 17;
-// Button is size-9 = 36px. Center in MIN_HEIGHT: (56 - 36) / 2 = 10
-const BUTTON_BOTTOM = 10;
-// Button right inset from pill edge — keeps it inside the rounded corner
+const MIN_HEIGHT = 48;
+const CARET_BOTTOM_PAD = 13;
+// FAB centering: (48 - 36) / 2 = 6
+const BUTTON_BOTTOM = 6;
 const BUTTON_RIGHT = 8;
-// Button diameter for zone calculation
 const BUTTON_SIZE = 36;
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
 
-const spring = { type: "spring" as const, stiffness: 520, damping: 30, mass: 0.85 };
+const spring = { type: "spring" as const, stiffness: 420, damping: 32, mass: 0.75 };
 const springSnap = { type: "spring" as const, stiffness: 600, damping: 26, mass: 0.7 };
 
 const glassBase: React.CSSProperties = {
-  background: "rgba(20, 20, 20, 0.72)",
+  background: "rgba(10, 10, 10, 0.72)",
   backdropFilter: "blur(44px)",
   WebkitBackdropFilter: "blur(44px)",
-  border: "1px solid rgba(255, 255, 255, 0.085)",
+  border: "1px solid rgba(255, 255, 255, 0.08)",
   boxShadow: [
-    "inset 0 1px 0 rgba(255,255,255,0.08)",
-    "0 4px 20px -5px rgba(0,0,0,0.55)",
+    "inset 0 1px 0 rgba(255,255,255,0.07)",
+    "0 4px 20px -5px rgba(0,0,0,0.52)",
     "0 1px 0 rgba(0,0,0,0.28)",
   ].join(", "),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Plus button — completely separate from the textbox
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Plus button — separate from the textbox ──────────────────────────────────
 const PlusButton = React.memo(function PlusButton({
   disabled,
 }: {
@@ -70,11 +64,7 @@ const PlusButton = React.memo(function PlusButton({
   );
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Floating action button — lives OUTSIDE the pill, overlapping its right edge.
-// Absolutely positioned by the parent flex row so it sits above the pill at
-// the bottom-right in both collapsed and multiline states.
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Floating action button ───────────────────────────────────────────────────
 const FloatingActionButton = React.memo(function FloatingActionButton({
   hasText,
   busy,
@@ -160,18 +150,16 @@ const FloatingActionButton = React.memo(function FloatingActionButton({
             "transition-[color] duration-150",
             "focus-visible:outline-none",
           )}
-          style={{ color: "rgba(255,255,255,0.40)" }}
+          style={{ color: "rgba(255,255,255,0.38)" }}
         >
-          <Mic className="size-[16px]" strokeWidth={2} />
+          <Mic className="size-[15px]" strokeWidth={1.75} />
         </motion.button>
       )}
     </AnimatePresence>
   );
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Main composer
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Main composer ────────────────────────────────────────────────────────────
 interface ChatComposerProps {
   autoFocus?: boolean;
   showScrollButton?: boolean;
@@ -193,11 +181,9 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
 
   const busy = status !== "idle" && status !== "error";
   const hasText = value.trim().length > 0;
-  // Collapsed = exactly one line of text height. A +2px tolerance absorbs
-  // sub-pixel rounding across devices before switching to multiline layout.
   const isMultiline = textareaHeight > MIN_HEIGHT + 2;
 
-  // ── Auto-resize ───────────────────────────────────────────────────────────
+  // ── Auto-resize ─────────────────────────────────────────────────────────────
   const resize = React.useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -219,7 +205,7 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
     resize();
   }, [value, resize]);
 
-  // ── Seed prompt + autofocus ───────────────────────────────────────────────
+  // ── Seed prompt + autofocus ──────────────────────────────────────────────────
   React.useEffect(() => {
     if (typeof window === "undefined") return;
     const seed = sessionStorage.getItem("nexa.seed-prompt");
@@ -234,7 +220,7 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Block layout-viewport panning inside the composer ────────────────────
+  // ── Block layout-viewport panning inside the composer ────────────────────────
   React.useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
@@ -253,7 +239,7 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
     return () => wrapper.removeEventListener("touchmove", blockPan);
   }, []);
 
-  // ── Submit ────────────────────────────────────────────────────────────────
+  // ── Submit ─────────────────────────────────────────────────────────────────
   const submit = async () => {
     const text = value.trim();
     if (!text || busy) return;
@@ -279,39 +265,32 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
     }
   };
 
-  // Pill: full-width glass container. No right padding — the floating button
-  // overlaps the right edge from the outside, z-index above.
   const pillStyle: React.CSSProperties = {
     minHeight: `${MIN_HEIGHT}px`,
-    borderRadius: "28px",
-    background: "rgba(22, 22, 22, 0.58)",
-    backdropFilter: "blur(52px)",
-    WebkitBackdropFilter: "blur(52px)",
+    borderRadius: "24px",
+    background: "rgba(10, 10, 10, 0.72)",
+    backdropFilter: "blur(44px)",
+    WebkitBackdropFilter: "blur(44px)",
     border: focused
-      ? "1px solid rgba(255,255,255,0.15)"
+      ? "1px solid rgba(255,255,255,0.13)"
       : "1px solid rgba(255,255,255,0.08)",
     boxShadow: focused
       ? [
-          "inset 0 1px 0 rgba(255,255,255,0.09)",
-          "0 0 0 3px rgba(255,255,255,0.032)",
-          "0 8px 28px -6px rgba(0,0,0,0.42)",
+          "inset 0 1px 0 rgba(255,255,255,0.08)",
+          "0 0 0 2px rgba(255,255,255,0.026)",
+          "0 6px 24px -6px rgba(0,0,0,0.42)",
         ].join(", ")
       : [
-          "inset 0 1px 0 rgba(255,255,255,0.07)",
+          "inset 0 1px 0 rgba(255,255,255,0.06)",
           "0 4px 20px -5px rgba(0,0,0,0.36)",
         ].join(", "),
-    transition: "border-color 220ms ease, box-shadow 220ms ease",
-    // Left padding only — right side is open for the floating button overlay
-    padding: "0 0 0 20px",
+    transition: "border-color 200ms ease, box-shadow 200ms ease",
+    padding: "0 0 0 16px",
   };
 
-  // Dynamic text right padding:
-  //   Collapsed — compact clearance so button overlaps the pill aesthetically
-  //               (BUTTON_RIGHT + BUTTON_SIZE + ~8px breathing room)
-  //   Multiline — wider reserved zone keeps every line readable past the button
   const textPaddingRight = isMultiline
-    ? BUTTON_RIGHT + BUTTON_SIZE + 40   // 84px
-    : BUTTON_RIGHT + BUTTON_SIZE + 8;   // 52px
+    ? BUTTON_RIGHT + BUTTON_SIZE + 40
+    : BUTTON_RIGHT + BUTTON_SIZE + 8;
 
   return (
     <div
@@ -325,14 +304,15 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
     >
       <div className="max-w-3xl mx-auto">
         {/*
-          `relative` on the row lets FloatingActionButton anchor itself to
-          the pill's bottom-right without escaping the max-width container.
-          `items-end` keeps the pill and FAB bottom-anchored as the pill grows.
+          Spring-animated gap: 5px idle → 12px focused.
+          framer-motion animates the CSS `gap` property directly.
         */}
-        <div className="flex items-end gap-3 relative">
-          {/* Fixed-height wrapper centers the 48px circle within MIN_HEIGHT (56px)
-              so its vertical center matches the pill center exactly, in both
-              single-line and multiline states. */}
+        <motion.div
+          className="flex items-end relative"
+          animate={{ gap: focused ? "12px" : "5px" }}
+          transition={spring}
+        >
+          {/* Fixed-height wrapper keeps the 48px circle bottom-aligned with the pill */}
           <div
             className="flex items-center shrink-0"
             style={{ height: `${MIN_HEIGHT}px` }}
@@ -340,7 +320,7 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
             <PlusButton disabled={busy} />
           </div>
 
-          {/* Pill — full visual width; button floats above its right edge */}
+          {/* Pill */}
           <div className="flex-1" style={pillStyle}>
             <textarea
               ref={textareaRef}
@@ -368,7 +348,7 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
                 "w-full bg-transparent border-0 resize-none outline-none ring-0",
                 "scrollbar-none scroll-touch",
                 "disabled:cursor-default",
-                "placeholder:text-white/[0.26]",
+                "placeholder:text-white/[0.32]",
               )}
               style={{
                 fontSize: "15px",
@@ -376,10 +356,9 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
                 letterSpacing: "0.01em",
                 color: busy ? "rgba(255,255,255,0.38)" : "rgba(255,255,255,0.90)",
                 caretColor: "hsl(var(--primary))",
-                paddingTop: "17px",
+                paddingTop: "13px",
                 paddingBottom: `${CARET_BOTTOM_PAD}px`,
                 paddingLeft: 0,
-                // Switches from compact to reserved as composer grows to multiline
                 paddingRight: `${textPaddingRight}px`,
                 minHeight: `${MIN_HEIGHT}px`,
                 maxHeight: `${MAX_HEIGHT}px`,
@@ -395,9 +374,7 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
           {/*
             Floating action button:
             - Absolutely positioned relative to the flex row
-            - Sits above the pill via z-index (no clip from pill border-radius)
-            - bottom: BUTTON_BOTTOM centers it in the 56px collapsed height
-            - In multiline, stays anchored at the same bottom offset → bottom-right
+            - bottom: BUTTON_BOTTOM = 6px → centers 36px FAB inside 48px pill
             - right: BUTTON_RIGHT keeps it inside the pill's rounded corner
           */}
           <div
@@ -416,13 +393,7 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
             />
           </div>
 
-          {/*
-            Scroll-to-bottom button:
-            - Anchored to the top-right of the pill, 8px above it
-            - top: -(BUTTON_SIZE + 8) places it 8px above the flex row's top edge
-            - Moves up with the pill as the textarea grows (wrapper is bottom-0)
-            - right: BUTTON_RIGHT aligns with the FAB for visual consistency
-          */}
+          {/* Scroll-to-bottom button */}
           <AnimatePresence>
             {showScrollButton && onScrollToBottom && (
               <motion.button
@@ -435,7 +406,7 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
                   width: `${BUTTON_SIZE}px`,
                   height: `${BUTTON_SIZE}px`,
                   borderRadius: "50%",
-                  background: "rgba(30, 30, 30, 0.72)",
+                  background: "rgba(20, 20, 20, 0.80)",
                   backdropFilter: "blur(20px)",
                   WebkitBackdropFilter: "blur(20px)",
                   border: "1px solid rgba(255, 255, 255, 0.06)",
@@ -459,7 +430,7 @@ export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: 
               </motion.button>
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
