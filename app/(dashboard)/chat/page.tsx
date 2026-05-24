@@ -136,9 +136,9 @@ export default function ChatPage() {
                 WebkitBackdropFilter: "blur(20px)",
                 border: "1px solid rgba(255, 255, 255, 0.06)",
                 boxShadow: [
-                  "0 4px 24px -4px rgba(0,0,0,0.52)",
-                  "0 1px 2px rgba(0,0,0,0.28)",
-                  "inset 0 1px 0 rgba(255,255,255,0.07)",
+                  "0 2px 10px -2px rgba(0,0,0,0.36)",
+                  "0 1px 2px rgba(0,0,0,0.16)",
+                  "inset 0 1px 0 rgba(255,255,255,0.06)",
                 ].join(", "),
               }}
               initial={{ opacity: 0, scale: 0.92, y: 6 }}

@@ -377,7 +377,10 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
                 paddingTop: "17px",
                 paddingBottom: `${CARET_BOTTOM_PAD}px`,
                 paddingLeft: 0,
-                paddingRight: 0,
+                // Reserve right space to clear the floating scroll-to-bottom
+                // button that sits at the pill's right edge at z:20. Without
+                // this, wrapped lines run underneath the button on narrow viewports.
+                paddingRight: "72px",
                 minHeight: `${MIN_HEIGHT}px`,
                 maxHeight: `${MAX_HEIGHT}px`,
                 height: `${MIN_HEIGHT}px`,
