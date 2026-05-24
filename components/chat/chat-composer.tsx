@@ -12,18 +12,19 @@ const MAX_HEIGHT = 240;
 const MIN_HEIGHT = 56;
 // Bottom padding inside the textarea scroll box
 const CARET_BOTTOM_PAD = 17;
+// Button is size-9 = 36px. Center in MIN_HEIGHT: (56 - 36) / 2 = 10
+const BUTTON_BOTTOM = 10;
+// Button right inset from pill edge — keeps it inside the rounded corner
+const BUTTON_RIGHT = 8;
+// Button diameter for zone calculation
+const BUTTON_SIZE = 36;
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
 
-// Shared spring — responsive without being bouncy
 const spring = { type: "spring" as const, stiffness: 520, damping: 30, mass: 0.85 };
-// Snappier spring for icon swaps
 const springSnap = { type: "spring" as const, stiffness: 600, damping: 26, mass: 0.7 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Glass style tokens — defined once so both buttons share the same language
-// ─────────────────────────────────────────────────────────────────────────────
 const glassBase: React.CSSProperties = {
   background: "rgba(20, 20, 20, 0.72)",
   backdropFilter: "blur(44px)",
@@ -49,13 +50,11 @@ const PlusButton = React.memo(function PlusButton({
       type="button"
       disabled={disabled}
       aria-label="Attach"
-      // whileTap fires on both pointer and touch; spring snaps back naturally
       whileTap={{ scale: 0.82 }}
       transition={spring}
       className={cn(
         "shrink-0 flex items-center justify-center",
         "size-12 rounded-full",
-        // Hover: lighten border + icon
         "hover:border-[rgba(255,255,255,0.14)] active:brightness-110",
         "transition-[border-color,opacity] duration-200",
         "disabled:pointer-events-none disabled:opacity-25",
@@ -72,10 +71,11 @@ const PlusButton = React.memo(function PlusButton({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Right action zone — three exclusive states: mic | send | stop
-// Renders inside the textbox pill on the trailing edge
+// Floating action button — lives OUTSIDE the pill, overlapping its right edge.
+// Absolutely positioned by the parent flex row so it sits above the pill at
+// the bottom-right in both collapsed and multiline states.
 // ─────────────────────────────────────────────────────────────────────────────
-const RightActionZone = React.memo(function RightActionZone({
+const FloatingActionButton = React.memo(function FloatingActionButton({
   hasText,
   busy,
   onSend,
@@ -86,94 +86,86 @@ const RightActionZone = React.memo(function RightActionZone({
   onSend: () => void;
   onStop: () => void;
 }) {
-  // Which key is active drives which motion element is mounted
   const activeKey = busy ? "stop" : hasText ? "send" : "mic";
 
   return (
-    <div
-      className="shrink-0 flex items-center"
-      // Align to bottom of the pill with a small offset so the button sits
-      // centered inside the 56 px minimum height
-      style={{ paddingBottom: "9px", paddingLeft: "2px" }}
-    >
-      <AnimatePresence mode="popLayout" initial={false}>
-        {activeKey === "stop" && (
-          <motion.button
-            key="stop"
-            type="button"
-            onClick={onStop}
-            aria-label="Stop agent"
-            initial={{ scale: 0.62, opacity: 0, y: 4 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.62, opacity: 0, y: 4 }}
-            transition={springSnap}
-            whileTap={{ scale: 0.82 }}
-            className={cn(
-              "flex items-center justify-center",
-              "size-9 rounded-full",
-              "focus-visible:outline-none",
-            )}
-            style={{
-              background: "rgba(255, 112, 0, 0.13)",
-              border: "1px solid rgba(255, 112, 0, 0.24)",
-            }}
-          >
-            <Square className="size-[10px] fill-primary text-primary" />
-          </motion.button>
-        )}
+    <AnimatePresence mode="popLayout" initial={false}>
+      {activeKey === "stop" && (
+        <motion.button
+          key="stop"
+          type="button"
+          onClick={onStop}
+          aria-label="Stop agent"
+          initial={{ scale: 0.62, opacity: 0, y: 4 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.62, opacity: 0, y: 4 }}
+          transition={springSnap}
+          whileTap={{ scale: 0.82 }}
+          className={cn(
+            "flex items-center justify-center",
+            "size-9 rounded-full",
+            "focus-visible:outline-none",
+          )}
+          style={{
+            background: "rgba(255, 112, 0, 0.13)",
+            border: "1px solid rgba(255, 112, 0, 0.24)",
+          }}
+        >
+          <Square className="size-[10px] fill-primary text-primary" />
+        </motion.button>
+      )}
 
-        {activeKey === "send" && (
-          <motion.button
-            key="send"
-            type="button"
-            onClick={onSend}
-            aria-label="Send message"
-            initial={{ scale: 0.62, opacity: 0, y: 6 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.62, opacity: 0, y: -6 }}
-            transition={springSnap}
-            whileTap={{ scale: 0.82 }}
-            className={cn(
-              "flex items-center justify-center",
-              "size-9 rounded-full",
-              "hover:brightness-110 transition-[filter] duration-150",
-              "focus-visible:outline-none",
-            )}
-            style={{
-              background: "hsl(var(--primary))",
-              boxShadow: "0 2px 20px -4px hsl(28 100% 64% / 0.65)",
-            }}
-          >
-            <ArrowUp
-              className="size-[15px] text-primary-foreground"
-              strokeWidth={2.5}
-            />
-          </motion.button>
-        )}
+      {activeKey === "send" && (
+        <motion.button
+          key="send"
+          type="button"
+          onClick={onSend}
+          aria-label="Send message"
+          initial={{ scale: 0.62, opacity: 0, y: 6 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.62, opacity: 0, y: -6 }}
+          transition={springSnap}
+          whileTap={{ scale: 0.82 }}
+          className={cn(
+            "flex items-center justify-center",
+            "size-9 rounded-full",
+            "hover:brightness-110 transition-[filter] duration-150",
+            "focus-visible:outline-none",
+          )}
+          style={{
+            background: "hsl(var(--primary))",
+            boxShadow: "0 2px 20px -4px hsl(28 100% 64% / 0.65)",
+          }}
+        >
+          <ArrowUp
+            className="size-[15px] text-primary-foreground"
+            strokeWidth={2.5}
+          />
+        </motion.button>
+      )}
 
-        {activeKey === "mic" && (
-          <motion.button
-            key="mic"
-            type="button"
-            aria-label="Voice input"
-            initial={{ scale: 0.62, opacity: 0, y: -6 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.62, opacity: 0, y: 6 }}
-            transition={springSnap}
-            whileTap={{ scale: 0.82 }}
-            className={cn(
-              "flex items-center justify-center",
-              "size-9 rounded-full",
-              "transition-[color] duration-150",
-              "focus-visible:outline-none",
-            )}
-            style={{ color: "rgba(255,255,255,0.40)" }}
-          >
-            <Mic className="size-[16px]" strokeWidth={2} />
-          </motion.button>
-        )}
-      </AnimatePresence>
-    </div>
+      {activeKey === "mic" && (
+        <motion.button
+          key="mic"
+          type="button"
+          aria-label="Voice input"
+          initial={{ scale: 0.62, opacity: 0, y: -6 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.62, opacity: 0, y: 6 }}
+          transition={springSnap}
+          whileTap={{ scale: 0.82 }}
+          className={cn(
+            "flex items-center justify-center",
+            "size-9 rounded-full",
+            "transition-[color] duration-150",
+            "focus-visible:outline-none",
+          )}
+          style={{ color: "rgba(255,255,255,0.40)" }}
+        >
+          <Mic className="size-[16px]" strokeWidth={2} />
+        </motion.button>
+      )}
+    </AnimatePresence>
   );
 });
 
@@ -187,6 +179,7 @@ interface ChatComposerProps {
 export function ChatComposer({ autoFocus }: ChatComposerProps) {
   const [value, setValue] = React.useState("");
   const [focused, setFocused] = React.useState(false);
+  const [textareaHeight, setTextareaHeight] = React.useState(MIN_HEIGHT);
 
   const sendMessage = useChatStore((s) => s.sendMessage);
   const status = useChatStore((s) => s.status);
@@ -198,10 +191,11 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
 
   const busy = status !== "idle" && status !== "error";
   const hasText = value.trim().length > 0;
+  // Collapsed = exactly one line of text height. A +2px tolerance absorbs
+  // sub-pixel rounding across devices before switching to multiline layout.
+  const isMultiline = textareaHeight > MIN_HEIGHT + 2;
 
   // ── Auto-resize ───────────────────────────────────────────────────────────
-  // Collapse to 0 → read scrollHeight → set exact height. Captures scrollTop
-  // before the collapse so Android caret/handles don't drift.
   const resize = React.useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -210,11 +204,13 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
     el.style.height = "0px";
     const scrollH = el.scrollHeight;
     const overflowing = scrollH > MAX_HEIGHT;
-    el.style.height = `${Math.min(scrollH, MAX_HEIGHT)}px`;
+    const newHeight = Math.min(scrollH, MAX_HEIGHT);
+    el.style.height = `${newHeight}px`;
     el.style.overflowY = overflowing ? "auto" : "hidden";
     if (overflowing) {
       el.scrollTop = wasOverflowing ? savedScrollTop : scrollH;
     }
+    setTextareaHeight(newHeight);
   }, []);
 
   useIsomorphicLayoutEffect(() => {
@@ -237,8 +233,6 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
   }, []);
 
   // ── Block layout-viewport panning inside the composer ────────────────────
-  // Native touchmove listener (passive:false) lets us call preventDefault()
-  // while still allowing the textarea to scroll its own overflow content.
   React.useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
@@ -262,6 +256,7 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
     const text = value.trim();
     if (!text || busy) return;
     setValue("");
+    setTextareaHeight(MIN_HEIGHT);
     const el = textareaRef.current;
     if (el) {
       el.style.height = `${MIN_HEIGHT}px`;
@@ -282,7 +277,8 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
     }
   };
 
-  // Pill container border + shadow — transitions smoothly on focus
+  // Pill: full-width glass container. No right padding — the floating button
+  // overlaps the right edge from the outside, z-index above.
   const pillStyle: React.CSSProperties = {
     minHeight: `${MIN_HEIGHT}px`,
     borderRadius: "28px",
@@ -303,40 +299,39 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
           "0 4px 20px -5px rgba(0,0,0,0.36)",
         ].join(", "),
     transition: "border-color 220ms ease, box-shadow 220ms ease",
-    // Horizontal rhythm: generous leading padding, tight trailing before button
-    padding: "0 8px 0 20px",
+    // Left padding only — right side is open for the floating button overlay
+    padding: "0 0 0 20px",
   };
 
+  // Dynamic text right padding:
+  //   Collapsed — compact clearance so button overlaps the pill aesthetically
+  //               (BUTTON_RIGHT + BUTTON_SIZE + ~8px breathing room)
+  //   Multiline — wider reserved zone keeps every line readable past the button
+  const textPaddingRight = isMultiline
+    ? BUTTON_RIGHT + BUTTON_SIZE + 40   // 84px
+    : BUTTON_RIGHT + BUTTON_SIZE + 8;   // 52px
+
   return (
-    // Absolutely positioned so the wrapper itself is fully transparent —
-    // only the glass pill elements are visible. The parent must be
-    // position:relative (it is, via the chat page's flex container).
-    // Not motion.div: framer-promoted compositor layers can detach from the
-    // layout on Android Chrome during visual-viewport transitions.
     <div
       ref={wrapperRef}
       className="absolute bottom-0 left-0 right-0 px-3 md:px-4 pt-2"
       style={{
         paddingBottom: "max(14px, env(safe-area-inset-bottom))",
         zIndex: 10,
-        // Explicitly transparent — no dark layer behind the pills
         background: "transparent",
       }}
     >
       <div className="max-w-3xl mx-auto">
         {/*
-          Row layout:
-            [ Plus 48px ] [ 12px gap ] [ TextPill flex-1 ]
-
-          items-end: multiline textarea grows upward so both elements
-          stay anchored to the same bottom baseline.
+          `relative` on the row lets FloatingActionButton anchor itself to
+          the pill's bottom-right without escaping the max-width container.
+          `items-end` keeps Plus button and pill bottom-aligned as pill grows.
         */}
-        <div className="flex items-end gap-3">
-          {/* ── Plus button ─────────────────────────────────────────────── */}
+        <div className="flex items-end gap-3 relative">
           <PlusButton disabled={busy} />
 
-          {/* ── Text input pill ─────────────────────────────────────────── */}
-          <div className="flex-1 flex items-end" style={pillStyle}>
+          {/* Pill — full visual width; button floats above its right edge */}
+          <div className="flex-1" style={pillStyle}>
             <textarea
               ref={textareaRef}
               value={value}
@@ -349,7 +344,6 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
               }}
               onCompositionEnd={() => {
                 isComposing.current = false;
-                // IME may not fire onChange; re-measure after commit
                 resize();
               }}
               placeholder={busy ? "Agent is working…" : "Message Nexa..."}
@@ -361,10 +355,9 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
               spellCheck={true}
               enterKeyHint="send"
               className={cn(
-                "flex-1 bg-transparent border-0 resize-none outline-none ring-0",
+                "w-full bg-transparent border-0 resize-none outline-none ring-0",
                 "scrollbar-none scroll-touch",
                 "disabled:cursor-default",
-                // Placeholder color — white at 26% opacity
                 "placeholder:text-white/[0.26]",
               )}
               style={{
@@ -373,26 +366,39 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
                 letterSpacing: "0.01em",
                 color: busy ? "rgba(255,255,255,0.38)" : "rgba(255,255,255,0.90)",
                 caretColor: "hsl(var(--primary))",
-                // Vertical rhythm: top padding + single text line + bottom padding = ~56px
                 paddingTop: "17px",
                 paddingBottom: `${CARET_BOTTOM_PAD}px`,
                 paddingLeft: 0,
-                paddingRight: 0,
+                // Switches from compact to reserved as composer grows to multiline
+                paddingRight: `${textPaddingRight}px`,
                 minHeight: `${MIN_HEIGHT}px`,
                 maxHeight: `${MAX_HEIGHT}px`,
                 height: `${MIN_HEIGHT}px`,
                 overflowY: "hidden",
-                // pan-y: browser handles vertical scroll; won't bubble to parent
                 touchAction: "pan-y",
-                // Disables scroll-anchor algorithm so manual scrollTop
-                // restoration during resize keeps Android handles from drifting
                 overflowAnchor: "none",
-                transition: "color 200ms ease",
+                transition: "color 200ms ease, padding-right 200ms ease",
               }}
             />
+          </div>
 
-            {/* Right action zone — absolutely owned by the pill */}
-            <RightActionZone
+          {/*
+            Floating action button:
+            - Absolutely positioned relative to the flex row
+            - Sits above the pill via z-index (no clip from pill border-radius)
+            - bottom: BUTTON_BOTTOM centers it in the 56px collapsed height
+            - In multiline, stays anchored at the same bottom offset → bottom-right
+            - right: BUTTON_RIGHT keeps it inside the pill's rounded corner
+          */}
+          <div
+            className="absolute"
+            style={{
+              bottom: `${BUTTON_BOTTOM}px`,
+              right: `${BUTTON_RIGHT}px`,
+              zIndex: 2,
+            }}
+          >
+            <FloatingActionButton
               hasText={hasText}
               busy={busy}
               onSend={submit}
