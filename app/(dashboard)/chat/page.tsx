@@ -114,33 +114,44 @@ export default function ChatPage() {
         </div>
 
         {/*
-          Floating "scroll to bottom" button.
-          Positioned above the composer using env(safe-area-inset-bottom) so it
-          stays above the home indicator on iOS and the keyboard on Android/PWA.
-          Uses pointer-events-none on the wrapper so the transparent area around
-          the button never blocks touches on the message list or composer.
+          Floating "scroll to bottom" button — Telegram-style side utility.
+          Sits at the right edge of the composer, vertically centred on the
+          pill. Architecturally independent: absolute, z-20, never affects
+          the TextInputContainer width/height.
         */}
         <AnimatePresence>
           {showJumpButton && (
-            <motion.div
-              className="absolute inset-x-0 flex justify-center pointer-events-none z-20"
+            <motion.button
+              onClick={scrollToBottom}
+              aria-label="Scroll to latest message"
+              className="absolute z-20 grid place-items-center"
               style={{
-                bottom:
-                  "calc(max(16px, env(safe-area-inset-bottom, 16px)) + 100px)",
+                right: "16px",
+                bottom: "calc(max(14px, env(safe-area-inset-bottom, 14px)) + 10px)",
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                background: "rgba(30, 30, 30, 0.72)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                border: "1px solid rgba(255, 255, 255, 0.06)",
+                boxShadow: [
+                  "0 4px 24px -4px rgba(0,0,0,0.52)",
+                  "0 1px 2px rgba(0,0,0,0.28)",
+                  "inset 0 1px 0 rgba(255,255,255,0.07)",
+                ].join(", "),
               }}
-              initial={{ opacity: 0, scale: 0.8, y: 6 }}
+              initial={{ opacity: 0, scale: 0.92, y: 6 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 6 }}
-              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              exit={{ opacity: 0, scale: 0.92, y: 6 }}
+              transition={{ type: "spring", stiffness: 520, damping: 30, mass: 0.85 }}
+              whileTap={{ scale: 0.88 }}
             >
-              <button
-                onClick={scrollToBottom}
-                className="pointer-events-auto size-9 rounded-full bg-background border border-border/80 shadow-lg grid place-items-center hover:bg-secondary transition-colors"
-                aria-label="Scroll to latest message"
-              >
-                <ChevronDown className="size-4 text-foreground/70" />
-              </button>
-            </motion.div>
+              <ChevronDown
+                size={15}
+                style={{ color: "rgba(255,255,255,0.65)" }}
+              />
+            </motion.button>
           )}
         </AnimatePresence>
 
