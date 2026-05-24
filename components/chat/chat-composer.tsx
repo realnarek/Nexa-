@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Mic, Plus, Square } from "lucide-react";
+import { ArrowUp, ChevronDown, Mic, Plus, Square } from "lucide-react";
 import { useChatStore } from "@/store/chat-store";
 import { cn } from "@/lib/utils";
 
@@ -174,9 +174,11 @@ const FloatingActionButton = React.memo(function FloatingActionButton({
 // ─────────────────────────────────────────────────────────────────────────────
 interface ChatComposerProps {
   autoFocus?: boolean;
+  showScrollButton?: boolean;
+  onScrollToBottom?: () => void;
 }
 
-export function ChatComposer({ autoFocus }: ChatComposerProps) {
+export function ChatComposer({ autoFocus, showScrollButton, onScrollToBottom }: ChatComposerProps) {
   const [value, setValue] = React.useState("");
   const [focused, setFocused] = React.useState(false);
   const [textareaHeight, setTextareaHeight] = React.useState(MIN_HEIGHT);
@@ -405,6 +407,50 @@ export function ChatComposer({ autoFocus }: ChatComposerProps) {
               onStop={stop}
             />
           </div>
+
+          {/*
+            Scroll-to-bottom button:
+            - Anchored to the top-right of the pill, 8px above it
+            - top: -(BUTTON_SIZE + 8) places it 8px above the flex row's top edge
+            - Moves up with the pill as the textarea grows (wrapper is bottom-0)
+            - right: BUTTON_RIGHT aligns with the FAB for visual consistency
+          */}
+          <AnimatePresence>
+            {showScrollButton && onScrollToBottom && (
+              <motion.button
+                onClick={onScrollToBottom}
+                aria-label="Scroll to latest message"
+                className="absolute grid place-items-center"
+                style={{
+                  top: `${-(BUTTON_SIZE + 8)}px`,
+                  right: `${BUTTON_RIGHT}px`,
+                  width: `${BUTTON_SIZE}px`,
+                  height: `${BUTTON_SIZE}px`,
+                  borderRadius: "50%",
+                  background: "rgba(30, 30, 30, 0.72)",
+                  backdropFilter: "blur(20px)",
+                  WebkitBackdropFilter: "blur(20px)",
+                  border: "1px solid rgba(255, 255, 255, 0.06)",
+                  boxShadow: [
+                    "0 4px 24px -4px rgba(0,0,0,0.52)",
+                    "0 1px 2px rgba(0,0,0,0.28)",
+                    "inset 0 1px 0 rgba(255,255,255,0.07)",
+                  ].join(", "),
+                  zIndex: 2,
+                }}
+                initial={{ opacity: 0, scale: 0.92, y: 6 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 6 }}
+                transition={{ type: "spring", stiffness: 520, damping: 30, mass: 0.85 }}
+                whileTap={{ scale: 0.88 }}
+              >
+                <ChevronDown
+                  size={15}
+                  style={{ color: "rgba(255,255,255,0.65)" }}
+                />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

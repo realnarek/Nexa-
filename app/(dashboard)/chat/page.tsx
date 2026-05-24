@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, NotebookPen, Mail, ListChecks, ChevronDown } from "lucide-react";
+import { Globe, NotebookPen, Mail, ListChecks } from "lucide-react";
 import { TopBar } from "@/components/layout/top-bar";
 import { ChatComposer } from "@/components/chat/chat-composer";
 import { MessageBubble } from "@/components/chat/message-bubble";
@@ -113,48 +113,6 @@ export default function ChatPage() {
           )}
         </div>
 
-        {/*
-          Floating "scroll to bottom" button — Telegram-style side utility.
-          Sits at the right edge of the composer, vertically centred on the
-          pill. Architecturally independent: absolute, z-20, never affects
-          the TextInputContainer width/height.
-        */}
-        <AnimatePresence>
-          {showJumpButton && (
-            <motion.button
-              onClick={scrollToBottom}
-              aria-label="Scroll to latest message"
-              className="absolute z-20 grid place-items-center"
-              style={{
-                right: "16px",
-                bottom: "calc(max(14px, env(safe-area-inset-bottom, 14px)) + 10px)",
-                width: "36px",
-                height: "36px",
-                borderRadius: "50%",
-                background: "rgba(30, 30, 30, 0.72)",
-                backdropFilter: "blur(20px)",
-                WebkitBackdropFilter: "blur(20px)",
-                border: "1px solid rgba(255, 255, 255, 0.06)",
-                boxShadow: [
-                  "0 4px 24px -4px rgba(0,0,0,0.52)",
-                  "0 1px 2px rgba(0,0,0,0.28)",
-                  "inset 0 1px 0 rgba(255,255,255,0.07)",
-                ].join(", "),
-              }}
-              initial={{ opacity: 0, scale: 0.92, y: 6 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 6 }}
-              transition={{ type: "spring", stiffness: 520, damping: 30, mass: 0.85 }}
-              whileTap={{ scale: 0.88 }}
-            >
-              <ChevronDown
-                size={15}
-                style={{ color: "rgba(255,255,255,0.65)" }}
-              />
-            </motion.button>
-          )}
-        </AnimatePresence>
-
         {/* Suggestion chips — visible above composer when conversation is empty.
             pb-[88px] reserves space for the absolutely-positioned floating
             composer so chips are never overlapped by it. */}
@@ -210,7 +168,11 @@ export default function ChatPage() {
           }}
         />
 
-        <ChatComposer autoFocus={!hasMessages} />
+        <ChatComposer
+          autoFocus={!hasMessages}
+          showScrollButton={showJumpButton}
+          onScrollToBottom={scrollToBottom}
+        />
       </div>
     </>
   );
