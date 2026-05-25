@@ -696,7 +696,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 pb-3 scrollbar-thin">
+        <div className="flex-1 overflow-y-auto px-2 pb-3 scrollbar-none">
           <ul className="space-y-0.5">
             {conversations.length === 0 ? (
               <li
@@ -894,7 +894,7 @@ export function NexaChatUI({ children }: { children?: React.ReactNode }) {
 
             {/* ── Messages ── */}
             <div
-              className="flex-1 overflow-y-auto px-3 py-4 space-y-4 scrollbar-thin overscroll-contain"
+              className="flex-1 overflow-y-auto px-3 py-4 space-y-4 scrollbar-none overscroll-contain"
               style={{ scrollBehavior: "smooth", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
             >
               <div className="max-w-2xl mx-auto w-full space-y-4">

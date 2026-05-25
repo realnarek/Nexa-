@@ -363,7 +363,7 @@ function SectionLabel({
 
 function CodeBlock({ content }: { content: string }) {
   return (
-    <pre className="mt-1 font-mono text-[11px] text-foreground/65 overflow-x-auto scrollbar-thin whitespace-pre-wrap break-all bg-accent/10 rounded-lg p-2.5 border border-border/25 leading-relaxed select-text">
+    <pre className="mt-1 font-mono text-[11px] text-foreground/65 overflow-x-auto scrollbar-none whitespace-pre-wrap break-all bg-accent/10 rounded-lg p-2.5 border border-border/25 leading-relaxed select-text">
       {content}
     </pre>
   );

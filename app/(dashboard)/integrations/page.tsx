@@ -44,7 +44,7 @@ export default function IntegrationsPage() {
         subtitle={`${connectedCount} of ${tools.length} connected`}
       />
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin scroll-touch">
+      <div className="flex-1 overflow-y-auto scrollbar-none scroll-touch">
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
           <div className="surface-elevated rounded-xl p-5">
             <div className="flex items-start gap-3">

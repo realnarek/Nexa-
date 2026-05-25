@@ -88,7 +88,7 @@ export default function ChatPage() {
             content is visible through the transparent composer wrapper. */}
         <div
           ref={scrollerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-thin flex flex-col select-none"
+          className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-none flex flex-col select-none"
         >
           {hasMessages ? (
             <div className="max-w-3xl mx-auto w-full px-3 md:px-6 py-3 md:py-4 select-none">
