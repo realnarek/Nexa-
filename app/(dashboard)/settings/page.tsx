@@ -44,7 +44,7 @@ export default function SettingsPage() {
     <>
       <TopBar title="Settings" subtitle="Profile, theme, connected services" />
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
+      <div className="flex-1 overflow-y-auto scrollbar-none">
         <div className="max-w-2xl mx-auto px-6 py-8 space-y-8">
           {/* Profile */}
           <section className="surface-elevated rounded-xl p-6 space-y-5">

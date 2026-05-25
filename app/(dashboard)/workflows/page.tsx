@@ -37,7 +37,7 @@ export default function WorkflowsPage() {
         title="Workflow history"
         subtitle={`${workflows.length} run${workflows.length === 1 ? "" : "s"} recorded`}
       />
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
+      <div className="flex-1 overflow-y-auto scrollbar-none">
         <div className="max-w-4xl mx-auto px-6 py-8 space-y-3">
           {workflows.length === 0 ? (
             <div className="surface text-center py-16 px-6 rounded-xl">

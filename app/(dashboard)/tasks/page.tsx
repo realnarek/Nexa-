@@ -58,7 +58,7 @@ export default function TasksPage() {
         subtitle={`${counts.todo} open · ${counts.in_progress} in progress · ${counts.done} done`}
       />
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
+      <div className="flex-1 overflow-y-auto scrollbar-none">
         <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
           {/* Quick add */}
           <form onSubmit={handleAdd} className="surface-elevated rounded-xl p-3 flex items-center gap-2">
