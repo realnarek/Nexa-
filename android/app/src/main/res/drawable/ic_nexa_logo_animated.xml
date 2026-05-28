@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Nexa logo — AnimatedVectorDrawable for API 31+ splash screen.
+
+    Animation sequence (total 500 ms):
+      0–500 ms : logo group fades in (alpha 0→1) with scale-up (0.95→1.0)
+                 using a decelerate interpolator for a natural, premium feel.
+
+    The glow pulse and exit fade are handled programmatically in
+    MainActivity via SplashScreen.setOnExitAnimationListener so they
+    can be coordinated with the content transition.
+-->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+
+    <aapt:attr name="android:drawable">
+        <vector
+            android:width="108dp"
+            android:height="108dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+
+            <group
+                android:name="logo"
+                android:pivotX="12"
+                android:pivotY="12"
+                android:scaleX="0.95"
+                android:scaleY="0.95"
+                android:alpha="0">
+
+                <!-- Outer diamond — stroke only -->
+                <path
+                    android:pathData="M12,2.5L21,12L12,21.5L3,12Z"
+                    android:fillColor="@android:color/transparent"
+                    android:strokeColor="#FF9D47"
+                    android:strokeWidth="1.5"
+                    android:strokeLineJoin="round" />
+
+                <!-- Inner diamond — filled -->
+                <path
+                    android:pathData="M12,7L17,12L12,17L7,12Z"
+                    android:fillColor="#D9FF9D47" />
+
+            </group>
+        </vector>
+    </aapt:attr>
+
+    <!-- Animate the logo group: fade in + scale up -->
+    <target android:name="logo">
+        <aapt:attr name="android:animation">
+            <set xmlns:android="http://schemas.android.com/apk/res/android"
+                android:ordering="together">
+
+                <objectAnimator
+                    android:propertyName="alpha"
+                    android:valueFrom="0"
+                    android:valueTo="1"
+                    android:duration="400"
+                    android:startOffset="0"
+                    android:interpolator="@android:interpolator/decelerate_quint" />
+
+                <objectAnimator
+                    android:propertyName="scaleX"
+                    android:valueFrom="0.95"
+                    android:valueTo="1.0"
+                    android:duration="500"
+                    android:startOffset="0"
+                    android:interpolator="@android:interpolator/decelerate_quint" />
+
+                <objectAnimator
+                    android:propertyName="scaleY"
+                    android:valueFrom="0.95"
+                    android:valueTo="1.0"
+                    android:duration="500"
+                    android:startOffset="0"
+                    android:interpolator="@android:interpolator/decelerate_quint" />
+
+            </set>
+        </aapt:attr>
+    </target>
+
+</animated-vector>
