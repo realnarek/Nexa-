@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Main app theme -->
+    <style name="Theme.Nexa" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@color/nexa_black</item>
+        <item name="android:navigationBarColor">@color/nexa_black</item>
+        <item name="android:windowBackground">@color/nexa_black</item>
+        <item name="colorPrimary">@color/nexa_orange</item>
+        <item name="colorOnPrimary">@color/nexa_black</item>
+        <item name="colorSurface">@color/nexa_surface</item>
+    </style>
+
+    <!--
+        Splash theme (API 21-30).
+        Uses the AndroidX SplashScreen compat library.
+        Shows the static logo centered on black background.
+        Entry animation is driven programmatically in MainActivity.
+    -->
+    <style name="Theme.Nexa.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/nexa_black</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_nexa_logo</item>
+        <item name="windowSplashScreenAnimationDuration">0</item>
+        <item name="postSplashScreenTheme">@style/Theme.Nexa</item>
+    </style>
+
+</resources>

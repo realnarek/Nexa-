@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        Splash theme override for API 31+ (Android 12+).
+        Uses the native SplashScreen API with an AnimatedVectorDrawable
+        for the smooth fade-in + scale-up entry animation.
+        The exit animation is driven programmatically in MainActivity.
+    -->
+    <style name="Theme.Nexa.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/nexa_black</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_nexa_logo_animated</item>
+        <item name="windowSplashScreenAnimationDuration">500</item>
+        <item name="windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+        <item name="postSplashScreenTheme">@style/Theme.Nexa</item>
+    </style>
+
+</resources>

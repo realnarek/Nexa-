@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Nexa logo — static version used as the splash icon on API 21-30
+    and as the app launcher icon.
+
+    Diamond geometry (24×24 viewport):
+      Outer: M12,2.5 L21,12 L12,21.5 L3,12 Z  (stroke only)
+      Inner: M12,7  L17,12 L12,17  L7,12  Z   (filled)
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Outer diamond — stroke only -->
+    <path
+        android:pathData="M12,2.5L21,12L12,21.5L3,12Z"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF9D47"
+        android:strokeWidth="1.5"
+        android:strokeLineJoin="round" />
+
+    <!-- Inner diamond — filled -->
+    <path
+        android:pathData="M12,7L17,12L12,17L7,12Z"
+        android:fillColor="#D9FF9D47" />
+
+</vector>
